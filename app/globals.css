@@ -25,15 +25,15 @@
   }
   
   .btn-primary {
-    @apply bg-navy-deep hover:bg-opacity-90 text-white-crisp px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:shadow-lg;
+    @apply bg-navy-deep hover:bg-opacity-90 text-white-crisp px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:shadow-md flex items-center;
   }
   
   .btn-secondary {
-    @apply bg-gold-warm hover:bg-opacity-90 text-white-crisp px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:shadow-lg;
+    @apply bg-gold-warm hover:bg-opacity-90 text-white-crisp px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:shadow-md flex items-center;
   }
   
   .btn-outline {
-    @apply border-2 border-navy-deep text-navy-deep hover:bg-navy-deep hover:text-white-crisp px-6 py-3 rounded-xl font-medium transition-all duration-200;
+    @apply border border-navy-deep text-navy-deep hover:bg-navy-deep hover:text-white-crisp px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center;
   }
   
   .input-luxury {

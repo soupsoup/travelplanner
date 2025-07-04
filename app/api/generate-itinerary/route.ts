@@ -81,22 +81,32 @@ export async function POST(request: NextRequest) {
 Make it engaging, practical, and personalized to their preferences!`;
 
     console.log('Calling Anthropic API for destination:', destination);
+    console.log('Request details:', { destination, days, travelers, budget, travelStyle });
     
-    const message = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 3000,
-      temperature: 0.7,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    });
+    let itinerary = '';
+    
+    try {
+      const message = await anthropic.messages.create({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 3000,
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      });
 
-    const itinerary = message.content[0].type === 'text' ? message.content[0].text : 'Error generating itinerary';
+      console.log('Anthropic API response received, content type:', message.content[0].type);
+      
+      itinerary = message.content[0].type === 'text' ? message.content[0].text : 'Error generating itinerary';
 
-    console.log('Successfully generated itinerary for:', destination);
+      console.log('Successfully generated itinerary for:', destination, '- Length:', itinerary.length);
+    } catch (apiError) {
+      console.error('Anthropic API call failed:', apiError);
+      throw new Error(`Anthropic API error: ${apiError instanceof Error ? apiError.message : 'Unknown API error'}`);
+    }
 
     return NextResponse.json({ 
       success: true, 
