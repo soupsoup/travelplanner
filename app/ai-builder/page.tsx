@@ -122,14 +122,24 @@ const AIBuilder: React.FC = () => {
         
         // Show specific error message based on the error type
         let errorMessage = 'Failed to generate itinerary. ';
-        if (data.details?.includes('API key')) {
+        if (data.details?.includes('API key not configured')) {
           errorMessage += 'AI service is being configured. Please try again later.';
         } else if (data.details?.includes('Missing required fields')) {
           errorMessage += 'Please fill in all required fields.';
-        } else if (data.details?.includes('rate limit')) {
-          errorMessage += 'Too many requests. Please wait a moment and try again.';
-        } else if (data.details?.includes('authentication')) {
+        } else if (data.details?.includes('Authentication failed')) {
           errorMessage += 'Authentication error. Please contact support.';
+        } else if (data.details?.includes('Rate limit exceeded')) {
+          errorMessage += 'Too many requests. Please wait a moment and try again.';
+        } else if (data.details?.includes('Access denied')) {
+          errorMessage += 'API access error. Please contact support.';
+        } else if (data.details?.includes('Anthropic service error')) {
+          errorMessage += 'AI service temporarily unavailable. Please try again later.';
+        } else if (data.details?.includes('Network error')) {
+          errorMessage += 'Please check your internet connection and try again.';
+        } else if (data.details?.includes('Request timeout')) {
+          errorMessage += 'Request timed out. Please try again.';
+        } else if (data.details?.includes('Anthropic API error')) {
+          errorMessage += `AI service error: ${data.details.split(':')[1]?.trim() || 'Unknown error'}`;
         } else {
           errorMessage += 'Please check your internet connection and try again.';
         }

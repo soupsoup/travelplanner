@@ -103,9 +103,25 @@ Make it engaging, practical, and personalized to their preferences!`;
       itinerary = message.content[0].type === 'text' ? message.content[0].text : 'Error generating itinerary';
 
       console.log('Successfully generated itinerary for:', destination, '- Length:', itinerary.length);
-    } catch (apiError) {
+    } catch (apiError: any) {
       console.error('Anthropic API call failed:', apiError);
-      throw new Error(`Anthropic API error: ${apiError instanceof Error ? apiError.message : 'Unknown API error'}`);
+      
+      // Handle specific Anthropic errors
+      if (apiError.status === 401) {
+        throw new Error('Authentication failed: Invalid API key');
+      } else if (apiError.status === 429) {
+        throw new Error('Rate limit exceeded: Too many requests');
+      } else if (apiError.status === 403) {
+        throw new Error('Access denied: API key lacks permissions');
+      } else if (apiError.status === 500) {
+        throw new Error('Anthropic service error: Please try again later');
+      } else if (apiError.message?.includes('network')) {
+        throw new Error('Network error: Please check your internet connection');
+      } else if (apiError.message?.includes('timeout')) {
+        throw new Error('Request timeout: Please try again');
+      } else {
+        throw new Error(`Anthropic API error: ${apiError.message || 'Unknown API error'}`);
+      }
     }
 
     return NextResponse.json({ 
@@ -128,6 +144,8 @@ Make it engaging, practical, and personalized to their preferences!`;
 
   } catch (error) {
     console.error('Error generating itinerary:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error details:', error instanceof Error ? error.message : JSON.stringify(error));
     
     return NextResponse.json(
       { 
