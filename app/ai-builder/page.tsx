@@ -92,13 +92,119 @@ const AIBuilder: React.FC = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // For now, redirect to the itinerary page
+      // Save trip details to localStorage
+      const tripDetails = {
+        destination: formData.destination,
+        people: formData.travelers,
+        days: Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24)),
+        transport: 'Flight', // Could be enhanced based on form data
+        budget: formData.budget,
+        interests: formData.interests.join(', '),
+        travelStyle: formData.travelStyle,
+        groupType: formData.groupType,
+        activityLevel: formData.activityLevel,
+        startDate: formData.startDate,
+        endDate: formData.endDate
+      };
+      
+      // Generate a sample itinerary based on the form data
+      const sampleItinerary = `🌟 Your AI-Generated ${formData.destination} Itinerary 🌟
+
+📅 Trip Duration: ${tripDetails.days} days (${formData.startDate} to ${formData.endDate})
+👥 Travelers: ${formData.travelers}
+💰 Budget: ${formData.budget}
+🎯 Travel Style: ${formData.travelStyle}
+👨‍👩‍👧‍👦 Group Type: ${formData.groupType}
+🏃‍♂️ Activity Level: ${formData.activityLevel}
+
+🎯 Your Interests: ${formData.interests.join(', ')}
+
+${generateDayByDayItinerary(tripDetails, formData)}
+
+💡 Tips for your trip:
+• Book accommodations in advance for better rates
+• Check visa requirements for ${formData.destination}
+• Consider travel insurance for peace of mind
+• Download offline maps for easy navigation
+• Pack according to the local weather and activities
+
+✨ Have an amazing trip to ${formData.destination}! ✨`;
+      
+      // Save to localStorage
+      localStorage.setItem('tripDetails', JSON.stringify(tripDetails));
+      localStorage.setItem('itinerary', sampleItinerary);
+      
+      // Redirect to the itinerary page
       router.push('/itinerary');
     } catch (error) {
       console.error('Error generating itinerary:', error);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const generateDayByDayItinerary = (tripDetails: any, formData: any) => {
+    const days = tripDetails.days;
+    let itinerary = '';
+    
+    for (let day = 1; day <= Math.min(days, 7); day++) {
+      itinerary += `\n📅 Day ${day}:\n`;
+      
+      if (day === 1) {
+        itinerary += `• 🛬 Arrival in ${formData.destination}\n`;
+        itinerary += `• 🏨 Check into accommodation\n`;
+        itinerary += `• 🍽️ Welcome dinner at a local restaurant\n`;
+      } else if (day === days) {
+        itinerary += `• 🛍️ Last-minute shopping and souvenirs\n`;
+        itinerary += `• 🏨 Check out of accommodation\n`;
+        itinerary += `• ✈️ Departure\n`;
+      } else {
+        // Generate activities based on interests
+        if (formData.interests.includes('culture')) {
+          itinerary += `• 🏛️ Visit museums and cultural sites\n`;
+        }
+        if (formData.interests.includes('food')) {
+          itinerary += `• 🍜 Food tour or cooking class\n`;
+        }
+        if (formData.interests.includes('adventure')) {
+          itinerary += `• 🏔️ Adventure activities and outdoor experiences\n`;
+        }
+        if (formData.interests.includes('relaxation')) {
+          itinerary += `• 🧘‍♀️ Spa time or peaceful moments\n`;
+        }
+        if (formData.interests.includes('shopping')) {
+          itinerary += `• 🛍️ Shopping at local markets and boutiques\n`;
+        }
+        if (formData.interests.includes('nightlife')) {
+          itinerary += `• 🍸 Evening entertainment and nightlife\n`;
+        }
+        if (formData.interests.includes('nature')) {
+          itinerary += `• 🌳 Nature walks and scenic viewpoints\n`;
+        }
+        if (formData.interests.includes('history')) {
+          itinerary += `• 📚 Historical tours and landmarks\n`;
+        }
+        if (formData.interests.includes('art')) {
+          itinerary += `• 🎨 Art galleries and creative workshops\n`;
+        }
+        if (formData.interests.includes('photography')) {
+          itinerary += `• 📸 Photography tour of scenic spots\n`;
+        }
+        
+        // Add general activities if no specific interests
+        if (!formData.interests.length) {
+          itinerary += `• 🗺️ Explore the city center\n`;
+          itinerary += `• 🍽️ Try local cuisine\n`;
+          itinerary += `• 📸 Visit popular attractions\n`;
+        }
+      }
+    }
+    
+    if (days > 7) {
+      itinerary += `\n... and ${days - 7} more amazing days of exploration!\n`;
+    }
+    
+    return itinerary;
   };
 
   const isStepValid = () => {
