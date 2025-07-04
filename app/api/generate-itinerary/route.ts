@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
+    // Check if API key is available
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY not found in environment variables');
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'API key not configured',
+          details: 'ANTHROPIC_API_KEY environment variable is missing'
+        },
+        { status: 500 }
+      );
+    }
+
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
     const body = await request.json();
     const { 
       destination, 
@@ -19,6 +32,18 @@ export async function POST(request: NextRequest) {
       groupType, 
       activityLevel 
     } = body;
+
+    // Validate required fields
+    if (!destination || !startDate || !endDate || !travelers) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Missing required fields',
+          details: 'destination, startDate, endDate, and travelers are required'
+        },
+        { status: 400 }
+      );
+    }
 
     // Calculate trip duration
     const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
@@ -34,7 +59,7 @@ export async function POST(request: NextRequest) {
 - Travel style: ${travelStyle}
 - Group type: ${groupType}
 - Activity level: ${activityLevel}
-- Interests: ${interests.join(', ')}
+- Interests: ${interests?.join(', ') || 'General travel'}
 
 **Requirements:**
 1. Create a day-by-day itinerary for all ${days} days
@@ -55,6 +80,8 @@ export async function POST(request: NextRequest) {
 
 Make it engaging, practical, and personalized to their preferences!`;
 
+    console.log('Calling Anthropic API for destination:', destination);
+    
     const message = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
       max_tokens: 3000,
@@ -69,6 +96,8 @@ Make it engaging, practical, and personalized to their preferences!`;
 
     const itinerary = message.content[0].type === 'text' ? message.content[0].text : 'Error generating itinerary';
 
+    console.log('Successfully generated itinerary for:', destination);
+
     return NextResponse.json({ 
       success: true, 
       itinerary,
@@ -78,7 +107,7 @@ Make it engaging, practical, and personalized to their preferences!`;
         days,
         transport: 'Flight',
         budget,
-        interests: interests.join(', '),
+        interests: interests?.join(', ') || 'General travel',
         travelStyle,
         groupType,
         activityLevel,
@@ -89,6 +118,7 @@ Make it engaging, practical, and personalized to their preferences!`;
 
   } catch (error) {
     console.error('Error generating itinerary:', error);
+    
     return NextResponse.json(
       { 
         success: false, 

@@ -118,12 +118,26 @@ const AIBuilder: React.FC = () => {
         // Redirect to the itinerary page
         router.push('/itinerary');
       } else {
-        console.error('Failed to generate itinerary:', data.error);
-        alert('Failed to generate itinerary. Please try again.');
+        console.error('Failed to generate itinerary:', data.error, data.details);
+        
+        // Show specific error message based on the error type
+        let errorMessage = 'Failed to generate itinerary. ';
+        if (data.details?.includes('API key')) {
+          errorMessage += 'AI service is being configured. Please try again later.';
+        } else if (data.details?.includes('Missing required fields')) {
+          errorMessage += 'Please fill in all required fields.';
+        } else if (data.details?.includes('rate limit')) {
+          errorMessage += 'Too many requests. Please wait a moment and try again.';
+        } else if (data.details?.includes('authentication')) {
+          errorMessage += 'Authentication error. Please contact support.';
+        } else {
+          errorMessage += 'Please check your internet connection and try again.';
+        }
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('Error generating itinerary:', error);
-      alert('An error occurred while generating your itinerary. Please try again.');
+      alert('Network error occurred. Please check your internet connection and try again.');
     } finally {
       setIsGenerating(false);
     }
