@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy-deep: #1a365d;
+  --gold-warm: #d69e2e;
+  --gray-soft: #f8fafc;
+  --gray-medium: #64748b;
+  --gray-dark: #334155;
+  --white-crisp: #ffffff;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gray-soft text-gray-dark;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  .card-luxury {
+    @apply bg-white-crisp rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300;
+  }
+  
+  .btn-primary {
+    @apply bg-navy-deep hover:bg-opacity-90 text-white-crisp px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply bg-gold-warm hover:bg-opacity-90 text-white-crisp px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:shadow-lg;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-navy-deep text-navy-deep hover:bg-navy-deep hover:text-white-crisp px-6 py-3 rounded-xl font-medium transition-all duration-200;
+  }
+  
+  .input-luxury {
+    @apply bg-white-crisp border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-deep focus:ring-2 focus:ring-navy-deep focus:ring-opacity-20 transition-all duration-200;
+  }
+  
+  .text-luxury-primary {
+    @apply text-navy-deep;
+  }
+  
+  .text-luxury-secondary {
+    @apply text-gold-warm;
+  }
+  
+  .bg-luxury-gradient {
+    background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
+  }
+  
+  .hero-gradient {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #d69e2e 100%);
+  }
+} 
