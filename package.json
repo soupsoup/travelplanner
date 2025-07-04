@@ -33,6 +33,7 @@
     "zod": "^3.25.51"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.11.4",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.1.0",
     "prisma": "^6.11.1"
