@@ -3,15 +3,11 @@ import React from 'react';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
-  onClick?: () => void;
 }
 
-const Card: React.FC<CardProps> = ({ children, className = '', onClick }) => {
+const Card: React.FC<CardProps> = ({ children, className = '' }) => {
   return (
-    <div 
-      className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`}
-      onClick={onClick}
-    >
+    <div className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -29,4 +25,4 @@ export const CardFooter: React.FC<CardProps> = ({ children, className = '' }) =>
   return <div className={`px-6 py-4 border-t border-gray-100 bg-gray-50 ${className}`}>{children}</div>;
 };
 
-export default Card; 
+export default Card;
