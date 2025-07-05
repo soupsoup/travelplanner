@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation, Plus } from 'lucide-react';
 import { extractTimeAndDistance, isValidGoogleMapLink } from '../../lib/mapUtils';
 import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../lib/timeUtils';
 
@@ -23,6 +23,7 @@ const ItineraryPage = () => {
   const [tripImage, setTripImage] = useState<string>('');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [travelSegments, setTravelSegments] = useState<Record<string, LocationDistance>>({});
+  const [totalDays, setTotalDays] = useState(7); // Dynamic days state
   const [newActivity, setNewActivity] = useState({
     title: '',
     description: '',
@@ -50,8 +51,18 @@ const ItineraryPage = () => {
         // Read from localStorage (set by AI builder)
         const itineraryData = localStorage.getItem('itinerary');
         const tripData = localStorage.getItem('tripDetails');
+        const parsedTripData = tripData ? JSON.parse(tripData) : null;
+        
         setItinerary(itineraryData);
-        setTripDetails(tripData ? JSON.parse(tripData) : null);
+        setTripDetails(parsedTripData);
+        
+        // Initialize totalDays from tripDetails
+        if (parsedTripData && parsedTripData.days) {
+          setTotalDays(parsedTripData.days);
+        } else {
+          // Default to 7 days if no tripDetails
+          setTotalDays(7);
+        }
         
         if (itineraryData) {
           // TEMPORARILY SIMPLIFIED to prevent hydration issues
@@ -66,6 +77,7 @@ const ItineraryPage = () => {
         // Set default values if localStorage fails
         setActivities(createSampleActivities());
         setTripOverview('Welcome to your travel itinerary! Start planning your amazing trip.');
+        setTotalDays(7);
       }
     }, 100); // 100ms delay
     
@@ -327,7 +339,6 @@ const ItineraryPage = () => {
     if (!activity) return;
 
     const newDay = direction === 'left' ? activity.day - 1 : activity.day + 1;
-    const totalDays = 7; // Fixed to prevent hydration mismatch
     
     if (newDay < 1 || newDay > totalDays) return;
 
@@ -342,6 +353,69 @@ const ItineraryPage = () => {
     const updatedItinerary = generateItineraryFromActivities(updatedActivities);
     setItinerary(updatedItinerary);
     safeUpdateLocalStorage(updatedItinerary);
+  };
+
+  const handleAddDay = () => {
+    const newDayCount = totalDays + 1;
+    setTotalDays(newDayCount);
+    
+    // Update tripDetails to reflect the new day count
+    if (tripDetails) {
+      const updatedTripDetails = {
+        ...tripDetails,
+        days: newDayCount
+      };
+      setTripDetails(updatedTripDetails);
+      
+      // Update localStorage
+      try {
+        localStorage.setItem('tripDetails', JSON.stringify(updatedTripDetails));
+      } catch (error) {
+        console.error('Error updating tripDetails in localStorage:', error);
+      }
+    }
+  };
+
+  const handleRemoveDay = () => {
+    if (totalDays <= 1) return; // Don't allow removing the last day
+    
+    const newDayCount = totalDays - 1;
+    
+    // Move activities from the last day to the previous day
+    const activitiesOnLastDay = activities.filter(a => a.day === totalDays);
+    const updatedActivities = activities.map(a => {
+      if (a.day === totalDays) {
+        return { ...a, day: newDayCount };
+      }
+      return a;
+    });
+    
+    setActivities(updatedActivities);
+    setTotalDays(newDayCount);
+    
+    // If selected day is the removed day, select the previous day
+    if (selectedDay === totalDays) {
+      setSelectedDay(newDayCount);
+    }
+    
+    // Update tripDetails
+    if (tripDetails) {
+      const updatedTripDetails = {
+        ...tripDetails,
+        days: newDayCount
+      };
+      setTripDetails(updatedTripDetails);
+      
+      // Update localStorage
+      try {
+        localStorage.setItem('tripDetails', JSON.stringify(updatedTripDetails));
+        const updatedItinerary = generateItineraryFromActivities(updatedActivities);
+        setItinerary(updatedItinerary);
+        safeUpdateLocalStorage(updatedItinerary);
+      } catch (error) {
+        console.error('Error updating data in localStorage:', error);
+      }
+    }
   };
 
   const handleEditOverview = () => {
@@ -624,7 +698,7 @@ const ItineraryPage = () => {
     );
   }
 
-  const days = Array.from({length: 7}, (_, i) => i + 1); // Fixed to prevent hydration mismatch
+  const days = Array.from({length: totalDays}, (_, i) => i + 1); // Dynamic days based on trip length
   const selectedDayActivities = mounted ? sortActivitiesByTime(
     activities.filter(activity => activity.day === selectedDay)
   ) : [];
@@ -916,7 +990,7 @@ const ItineraryPage = () => {
                   <Calendar className="w-4 h-4 text-blue-600" />
                 </div>
               </div>
-                              <div className="text-2xl font-bold text-gray-900">{mounted && tripDetails ? `${tripDetails.days} days` : '7 days'}</div>
+                              <div className="text-2xl font-bold text-gray-900">{mounted ? `${totalDays} days` : '7 days'}</div>
             </div>
             
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -996,7 +1070,7 @@ const ItineraryPage = () => {
                      <p className="mb-4">
                        {mounted && tripDetails ? (
                          <>
-                           {tripDetails.people} travelers exploring {tripDetails.destination} for {tripDetails.days} days. 
+                           {tripDetails.people} travelers exploring {tripDetails.destination} for {totalDays} days. 
                            Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
                            Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
                          </>
@@ -1007,7 +1081,7 @@ const ItineraryPage = () => {
                    )}
                    <div className="text-sm text-gray-500 border-t pt-4">
                      <strong>Trip Details:</strong> {mounted && tripDetails ? (
-                       `${tripDetails.people} travelers • ${tripDetails.days} days • ${tripDetails.travelStyle} style • ${tripDetails.groupType} group • ${tripDetails.activityLevel} activity level • Budget: ${tripDetails.budget}`
+                       `${tripDetails.people} travelers • ${totalDays} days • ${tripDetails.travelStyle} style • ${tripDetails.groupType} group • ${tripDetails.activityLevel} activity level • Budget: ${tripDetails.budget}`
                      ) : (
                        'Loading...'
                      )}
@@ -1052,20 +1126,40 @@ const ItineraryPage = () => {
                  </div>
                </div>
                {viewMode === 'structured' && (
-                 <div className="flex flex-wrap gap-2">
-                   {days.map(day => (
+                 <div className="flex items-center gap-2">
+                   <div className="flex flex-wrap gap-2">
+                     {days.map(day => (
+                       <button
+                         key={day}
+                         onClick={() => setSelectedDay(day)}
+                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                           selectedDay === day
+                             ? 'bg-blue-600 text-white'
+                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                         }`}
+                       >
+                         Day {day}
+                       </button>
+                     ))}
+                   </div>
+                   <div className="flex items-center gap-1 ml-4">
                      <button
-                       key={day}
-                       onClick={() => setSelectedDay(day)}
-                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                         selectedDay === day
-                           ? 'bg-blue-600 text-white'
-                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                       }`}
+                       onClick={handleAddDay}
+                       className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                       title="Add Day"
                      >
-                       Day {day}
+                       <Plus className="w-4 h-4" />
                      </button>
-                   ))}
+                     {totalDays > 1 && (
+                       <button
+                         onClick={handleRemoveDay}
+                         className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                         title="Remove Last Day"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                     )}
+                   </div>
                  </div>
                )}
              </div>
@@ -1125,7 +1219,7 @@ const ItineraryPage = () => {
                                          <ArrowLeft className="w-4 h-4" />
                                        </button>
                                      )}
-                                     {activity.day < 7 && (
+                                     {activity.day < totalDays && (
                                        <button
                                          onClick={() => handleMoveActivity(activity.id, 'right')}
                                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
