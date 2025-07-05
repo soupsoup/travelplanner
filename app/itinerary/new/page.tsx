@@ -138,6 +138,25 @@ const NewItinerary: React.FC = () => {
   };
 
   const saveItinerary = () => {
+    // Flatten the itinerary structure to match the expected activities format
+    const flatActivities: any[] = [];
+    itinerary.forEach((day, dayIndex) => {
+      day.activities.forEach((activity, activityIndex) => {
+        flatActivities.push({
+          id: flatActivities.length + 1,
+          day: dayIndex + 1,
+          title: (activity as any).title || `Activity ${activityIndex + 1}`,
+          type: (activity as any).type || 'activity',
+          time: (activity as any).time || '10:00 AM - 12:00 PM',
+          location: (activity as any).location || tripDetails.destination,
+          cost: (activity as any).cost || 0,
+          description: (activity as any).description || (activity as any).title || `Activity ${activityIndex + 1}`,
+          priority: 'medium',
+          tips: (activity as any).tips || ''
+        });
+      });
+    });
+
     const savedItinerary = {
       id: Date.now().toString(),
       name: tripDetails.name,
@@ -148,10 +167,10 @@ const NewItinerary: React.FC = () => {
       budget: tripDetails.budget,
       status: 'planning',
       image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      activitiesCount: itinerary.reduce((sum, day) => sum + day.activities.length, 0),
+      activitiesCount: flatActivities.length,
       completedActivities: 0,
       tripDetails: tripDetails,
-      activities: itinerary,
+      activities: flatActivities, // Use flattened activities structure
       overview: `A ${itinerary.length}-day trip to ${tripDetails.destination}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

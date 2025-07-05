@@ -33,12 +33,70 @@ const Dashboard: React.FC = () => {
     loadSavedTrips();
   }, []);
 
+  const migrateTripActivities = (trip: any) => {
+    // Check if activities is in old format (array of day objects)
+    if (trip.activities && trip.activities.length > 0) {
+      const firstActivity = trip.activities[0];
+      // If first element has 'activities' property, it's the old format
+      if (firstActivity && firstActivity.activities && Array.isArray(firstActivity.activities)) {
+        console.log('Migrating trip from old format:', trip.name);
+        
+        // Flatten the old structure to new format
+        const flatActivities: any[] = [];
+        trip.activities.forEach((day: any, dayIndex: number) => {
+          if (day.activities && Array.isArray(day.activities)) {
+            day.activities.forEach((activity: any, activityIndex: number) => {
+              flatActivities.push({
+                id: flatActivities.length + 1,
+                day: dayIndex + 1,
+                title: activity.title || `Activity ${activityIndex + 1}`,
+                type: activity.type || 'activity',
+                time: activity.time || '10:00 AM - 12:00 PM',
+                location: activity.location || trip.destination,
+                cost: activity.cost || 0,
+                description: activity.description || activity.title || `Activity ${activityIndex + 1}`,
+                priority: 'medium',
+                tips: activity.tips || ''
+              });
+            });
+          }
+        });
+        
+        // Update the trip with new structure
+        return {
+          ...trip,
+          activities: flatActivities,
+          activitiesCount: flatActivities.length,
+          updatedAt: new Date().toISOString()
+        };
+      }
+    }
+    
+    // Return unchanged if already in correct format
+    return trip;
+  };
+
   const loadSavedTrips = () => {
     const saved = localStorage.getItem('savedTrips');
     if (saved) {
       try {
         const trips = JSON.parse(saved);
-        setSavedTrips(trips);
+        
+        // Migrate any trips with old data structure
+        const migratedTrips = trips.map(migrateTripActivities);
+        
+        // Check if any trips were migrated
+        const wasMigrated = migratedTrips.some((trip: any, index: number) => 
+          JSON.stringify(trip) !== JSON.stringify(trips[index])
+        );
+        
+        if (wasMigrated) {
+          console.log('Some trips were migrated to new format');
+          // Save the migrated trips back to localStorage
+          localStorage.setItem('savedTrips', JSON.stringify(migratedTrips));
+        }
+        
+        setSavedTrips(migratedTrips);
       } catch (error) {
         console.error('Error loading saved trips:', error);
         setSavedTrips([]);

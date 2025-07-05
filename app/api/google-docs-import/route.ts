@@ -4,21 +4,28 @@ export async function POST(request: NextRequest) {
   try {
     const { documentId, accessToken } = await request.json();
 
-    if (!documentId || !accessToken) {
+    if (!documentId) {
       return NextResponse.json(
-        { error: 'Document ID and access token are required' },
+        { error: 'Document ID is required' },
         { status: 400 }
       );
+    }
+
+    // Prepare headers for the Google Docs API request
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Only add authorization header if we have a real access token
+    if (accessToken && accessToken !== 'public_access') {
+      headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
     // Fetch document content from Google Docs API
     const response = await fetch(
       `https://docs.googleapis.com/v1/documents/${documentId}`,
       {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
       }
     );
 

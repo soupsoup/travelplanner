@@ -429,27 +429,38 @@ const ItineraryPage = () => {
 
   const handleGoogleAuth = async () => {
     try {
-      // Initialize Google OAuth
-      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''; // You'll need to set this
+      // For now, we'll make the document publicly accessible
+      // In a production implementation, you'd use Google OAuth client library
       
-      if (!clientId) {
-        alert('Google OAuth not configured. Please contact the administrator.');
-        return;
-      }
+      const instructions = `To import from Google Docs, you need to make your document publicly accessible:
 
-      // For now, we'll use a simple approach where user provides the document URL
-      // In a full implementation, you'd use Google OAuth client library
-      const accessToken = prompt('Please provide your Google OAuth access token (for testing purposes)');
+1. Open your Google Doc
+2. Click the "Share" button (top right)
+3. Click "Change to anyone with the link"
+4. Set permission to "Viewer" 
+5. Copy the link and paste it here
+
+Alternatively, you can:
+- Type "demo" to try with sample data
+- Contact support for OAuth setup
+
+Would you like to continue with a public document, or use the demo?`;
       
-      if (accessToken) {
-        setGoogleAccessToken(accessToken);
+      const choice = confirm(instructions + '\n\nClick OK to continue with public document, or Cancel to use demo.');
+      
+      if (choice) {
+        // For public documents, we don't need an access token
+        // The Google Docs API allows access to public documents
+        setGoogleAccessToken('public_access');
         return true;
+      } else {
+        // User chose demo
+        setGoogleDocsUrl('demo');
+        return false; // Don't proceed with auth, but will use demo
       }
-      
-      return false;
     } catch (error) {
       console.error('Google authentication failed:', error);
-      alert('Failed to authenticate with Google. Please try again.');
+      alert('Failed to set up Google Docs access. Please try again or use demo mode.');
       return false;
     }
   };
@@ -492,17 +503,43 @@ const ItineraryPage = () => {
     try {
       setImportingGoogleDoc(true);
       
-      // For demo purposes, use the demo endpoint first
-      // In production, you'd use the real Google Docs API with proper OAuth
-      const response = await fetch('/api/google-docs-demo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          documentId
-        }),
-      });
+      // Check if it's a demo request or real Google Docs URL
+      const isDemo = googleDocsUrl.toLowerCase().trim() === 'demo' || documentId === 'demo_document_id';
+      
+      let response;
+      if (isDemo) {
+        // Use demo endpoint for demo requests
+        response = await fetch('/api/google-docs-demo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            documentId
+          }),
+        });
+      } else {
+        // Use real Google Docs API for actual URLs
+        // First, get access token if not available
+        if (!googleAccessToken) {
+          const authSuccess = await handleGoogleAuth();
+          if (!authSuccess) {
+            setImportingGoogleDoc(false);
+            return;
+          }
+        }
+
+        response = await fetch('/api/google-docs-import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            documentId,
+            accessToken: googleAccessToken
+          }),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -1944,9 +1981,50 @@ const ItineraryPage = () => {
                   placeholder="https://docs.google.com/document/d/... (or type 'demo' for sample)"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
-                <p className="mt-1 text-xs text-gray-500">
-                  Enter any Google Docs URL or type "demo" to try with sample data
-                </p>
+                <div className="mt-2 text-xs text-gray-600 space-y-1">
+                  <p className="font-medium">📝 To import your Google Doc:</p>
+                  <ol className="list-decimal ml-4 space-y-1">
+                    <li>Open your Google Doc with the travel itinerary</li>
+                    <li>Click "Share" → "Change to anyone with the link"</li>
+                    <li>Set permission to "Viewer"</li>
+                    <li>Copy the link and paste it above</li>
+                  </ol>
+                  <p className="pt-1">
+                    <strong>Or type "demo"</strong> to try with sample data
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-800 mb-2">📋 Document Format Tips:</p>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Structure activities by day (e.g., "Day 1", "Day 2")</li>
+                  <li>• Include times, locations, and costs when available</li>
+                  <li>• Use clear activity names and descriptions</li>
+                  <li>• Add a "Trip Overview" section at the top</li>
+                </ul>
+                <details className="mt-2">
+                  <summary className="text-xs text-blue-700 cursor-pointer hover:text-blue-800">
+                    📄 Example Document Format
+                  </summary>
+                  <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded border font-mono">
+                    <pre className="whitespace-pre-wrap">
+Trip Overview:
+Exploring the beautiful city with cultural sites and local cuisine.
+
+Day 1
+- 9:00 AM: Arrival at Airport - Transport to hotel
+- 2:00 PM: Hotel Check-in at Grand Hotel
+- 7:00 PM: Dinner at Local Restaurant ($45)
+
+Day 2  
+- 9:00 AM: City Walking Tour ($25)
+- 1:00 PM: Lunch at Café Plaza ($20)
+- 3:00 PM: Museum Visit ($15)
+- 7:00 PM: Sunset Dinner Cruise ($85)
+                    </pre>
+                  </div>
+                </details>
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
