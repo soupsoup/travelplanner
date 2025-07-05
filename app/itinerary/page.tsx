@@ -5,6 +5,7 @@ import { extractTimeAndDistance, isValidGoogleMapLink } from '../../lib/mapUtils
 import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../lib/timeUtils';
 
 const ItineraryPage = () => {
+  const [mounted, setMounted] = useState(false);
   const [itinerary, setItinerary] = useState<string | null>(null);
   const [tripDetails, setTripDetails] = useState<any>(null);
   const [saved, setSaved] = useState(false);
@@ -37,18 +38,41 @@ const ItineraryPage = () => {
   });
 
   useEffect(() => {
-    // Read from localStorage (set by AI builder)
-    const itineraryData = localStorage.getItem('itinerary');
-    const tripData = localStorage.getItem('tripDetails');
-    setItinerary(itineraryData);
-    setTripDetails(tripData ? JSON.parse(tripData) : null);
-    
-    if (itineraryData) {
-      const { activities: parsedActivities, overview } = parseItinerary(itineraryData);
-      setActivities(parsedActivities);
-      setTripOverview(overview);
-    }
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
+    try {
+      // Read from localStorage (set by AI builder)
+      const itineraryData = localStorage.getItem('itinerary');
+      const tripData = localStorage.getItem('tripDetails');
+      setItinerary(itineraryData);
+      setTripDetails(tripData ? JSON.parse(tripData) : null);
+      
+      if (itineraryData) {
+        const { activities: parsedActivities, overview } = parseItinerary(itineraryData);
+        setActivities(parsedActivities);
+        setTripOverview(overview);
+      }
+    } catch (error) {
+      console.error('Error loading itinerary data:', error);
+      // Set default values if localStorage fails
+      setActivities(createSampleActivities());
+      setTripOverview('Welcome to your travel itinerary! Start planning your amazing trip.');
+    }
+  }, [mounted]);
+
+  const safeUpdateLocalStorage = (updatedItinerary: string) => {
+    if (mounted) {
+      try {
+        localStorage.setItem('itinerary', updatedItinerary);
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+    }
+  };
 
   const handleSave = () => {
     setShowSaveModal(true);
@@ -60,46 +84,56 @@ const ItineraryPage = () => {
       return;
     }
 
-    const tripId = Date.now().toString();
-    const currentDate = new Date().toISOString();
-    
-    const savedTrip = {
-      id: tripId,
-      name: tripName,
-      destination: tripDetails?.destination || 'Unknown',
-      startDate: currentDate,
-      endDate: currentDate,
-      daysCount: tripDetails?.days || 7,
-      travelers: tripDetails?.people || 1,
-      budget: { 
-        total: activities.reduce((sum, activity) => sum + activity.cost, 0), 
-        currency: 'USD' 
-      },
-      status: 'planning' as const,
-      image: tripImage || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      activitiesCount: activities.length,
-      completedActivities: 0,
-      tripDetails: tripDetails,
-      activities: activities,
-      overview: tripOverview,
-      createdAt: currentDate,
-      updatedAt: currentDate
-    };
+    if (!mounted) {
+      alert('Application not ready. Please try again.');
+      return;
+    }
 
-    // Save to localStorage
-    const existingTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
-    existingTrips.push(savedTrip);
-    localStorage.setItem('savedTrips', JSON.stringify(existingTrips));
+    try {
+      const tripId = Date.now().toString();
+      const currentDate = new Date().toISOString();
+      
+      const savedTrip = {
+        id: tripId,
+        name: tripName,
+        destination: tripDetails?.destination || 'Unknown',
+        startDate: currentDate,
+        endDate: currentDate,
+        daysCount: tripDetails?.days || 7,
+        travelers: tripDetails?.people || 1,
+        budget: { 
+          total: activities.reduce((sum, activity) => sum + activity.cost, 0), 
+          currency: 'USD' 
+        },
+        status: 'planning' as const,
+        image: tripImage || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+        activitiesCount: activities.length,
+        completedActivities: 0,
+        tripDetails: tripDetails,
+        activities: activities,
+        overview: tripOverview,
+        createdAt: currentDate,
+        updatedAt: currentDate
+      };
 
-    // Also save current itinerary
-    const updatedItinerary = generateItineraryFromActivities(activities);
-    setItinerary(updatedItinerary);
-    localStorage.setItem('itinerary', updatedItinerary);
+      // Save to localStorage
+      const existingTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
+      existingTrips.push(savedTrip);
+      localStorage.setItem('savedTrips', JSON.stringify(existingTrips));
 
-    setShowSaveModal(false);
-    setTripName('');
-    setTripImage('');
-    alert('Trip saved successfully!');
+      // Also save current itinerary
+      const updatedItinerary = generateItineraryFromActivities(activities);
+      setItinerary(updatedItinerary);
+      safeUpdateLocalStorage(updatedItinerary);
+
+      setShowSaveModal(false);
+      setTripName('');
+      setTripImage('');
+      alert('Trip saved successfully!');
+    } catch (error) {
+      console.error('Error saving trip:', error);
+      alert('Failed to save trip. Please try again.');
+    }
   };
 
   const handleActivityEdit = (activityId: number, field: string, value: string) => {
@@ -139,7 +173,7 @@ const ItineraryPage = () => {
     // Update localStorage with edited content
     const updatedItinerary = generateItineraryFromActivities(activities);
     setItinerary(updatedItinerary);
-    localStorage.setItem('itinerary', updatedItinerary);
+    safeUpdateLocalStorage(updatedItinerary);
   };
 
   const generateItineraryFromActivities = (activitiesList: any[]) => {
@@ -230,7 +264,7 @@ const ItineraryPage = () => {
     const updatedActivities = [...activities, activityToAdd];
     const updatedItinerary = generateItineraryFromActivities(updatedActivities);
     setItinerary(updatedItinerary);
-    localStorage.setItem('itinerary', updatedItinerary);
+    safeUpdateLocalStorage(updatedItinerary);
     
     // Reset form
     setAddingActivity(null);
@@ -274,7 +308,7 @@ const ItineraryPage = () => {
     const updatedActivities = activities.filter(activity => activity.id !== activityId);
     const updatedItinerary = generateItineraryFromActivities(updatedActivities);
     setItinerary(updatedItinerary);
-    localStorage.setItem('itinerary', updatedItinerary);
+    safeUpdateLocalStorage(updatedItinerary);
   };
 
   const handleMoveActivity = (activityId: number, direction: 'left' | 'right') => {
@@ -296,7 +330,7 @@ const ItineraryPage = () => {
     );
     const updatedItinerary = generateItineraryFromActivities(updatedActivities);
     setItinerary(updatedItinerary);
-    localStorage.setItem('itinerary', updatedItinerary);
+    safeUpdateLocalStorage(updatedItinerary);
   };
 
   const handleEditOverview = () => {
@@ -311,7 +345,7 @@ const ItineraryPage = () => {
     // Update localStorage
     const updatedItinerary = generateItineraryFromActivities(activities);
     setItinerary(updatedItinerary);
-    localStorage.setItem('itinerary', updatedItinerary);
+    safeUpdateLocalStorage(updatedItinerary);
   };
 
   const handleCancelOverviewEdit = () => {
@@ -357,7 +391,7 @@ const ItineraryPage = () => {
         );
         const updatedItinerary = generateItineraryFromActivities(updatedActivities);
         setItinerary(updatedItinerary);
-        localStorage.setItem('itinerary', updatedItinerary);
+        safeUpdateLocalStorage(updatedItinerary);
       } else {
         alert('Failed to get AI advice. Please try again.');
       }
@@ -799,6 +833,18 @@ const ItineraryPage = () => {
       </div>
     );
   };
+
+  // Don't render until mounted to prevent SSR issues
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your itinerary...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
