@@ -41,7 +41,8 @@ export function parseTimeString(timeStr: string): TimeRange | null {
 }
 
 function parseToDate(timeStr: string): Date | null {
-  const baseDate = new Date();
+  // Use a fixed base date to prevent hydration mismatches
+  const baseDate = new Date('2024-01-01T00:00:00.000Z');
   baseDate.setSeconds(0);
   baseDate.setMilliseconds(0);
 
@@ -77,38 +78,39 @@ function parseToDate(timeStr: string): Date | null {
 }
 
 function parseNamedTime(timeStr: string): TimeRange | null {
-  const baseDate = new Date();
+  // Use a fixed base date to prevent hydration mismatches
+  const baseDate = new Date('2024-01-01T00:00:00.000Z');
   
   if (timeStr.includes('morning')) {
-    return {
-      start: new Date(baseDate.setHours(9, 0)),
-      end: new Date(baseDate.setHours(12, 0)),
-      original: timeStr
-    };
+    const start = new Date(baseDate);
+    start.setHours(9, 0);
+    const end = new Date(baseDate);
+    end.setHours(12, 0);
+    return { start, end, original: timeStr };
   }
   
   if (timeStr.includes('afternoon')) {
-    return {
-      start: new Date(baseDate.setHours(13, 0)),
-      end: new Date(baseDate.setHours(17, 0)),
-      original: timeStr
-    };
+    const start = new Date(baseDate);
+    start.setHours(13, 0);
+    const end = new Date(baseDate);
+    end.setHours(17, 0);
+    return { start, end, original: timeStr };
   }
   
   if (timeStr.includes('evening')) {
-    return {
-      start: new Date(baseDate.setHours(18, 0)),
-      end: new Date(baseDate.setHours(21, 0)),
-      original: timeStr
-    };
+    const start = new Date(baseDate);
+    start.setHours(18, 0);
+    const end = new Date(baseDate);
+    end.setHours(21, 0);
+    return { start, end, original: timeStr };
   }
 
   if (timeStr.includes('night')) {
-    return {
-      start: new Date(baseDate.setHours(21, 0)),
-      end: new Date(baseDate.setHours(23, 59)),
-      original: timeStr
-    };
+    const start = new Date(baseDate);
+    start.setHours(21, 0);
+    const end = new Date(baseDate);
+    end.setHours(23, 59);
+    return { start, end, original: timeStr };
   }
 
   return null;
@@ -184,18 +186,22 @@ export function estimateDistanceFromLocations(fromLocation: string, toLocation: 
   const isSameArea = fromLower.includes(toLower) || toLower.includes(fromLower) || 
                      hasSameKeywords(fromLower, toLower);
   
+  // Create deterministic pseudo-random based on location names to prevent hydration errors
+  const seed = fromLocation.length + toLocation.length + fromLocation.charCodeAt(0) + toLocation.charCodeAt(0);
+  const pseudoRandom = (seed * 9301 + 49297) % 233280 / 233280;
+  
   let distance: number;
   let mode: 'driving' | 'walking' | 'transit' = 'driving';
   
   if (isSameArea) {
     // Within same area - shorter distance
-    distance = Math.random() * 2 + 0.3; // 0.3 to 2.3 miles
+    distance = pseudoRandom * 2 + 0.3; // 0.3 to 2.3 miles
     if (distance < 0.8) {
       mode = 'walking';
     }
   } else {
     // Different areas - longer distance
-    distance = Math.random() * 8 + 1.5; // 1.5 to 9.5 miles
+    distance = pseudoRandom * 8 + 1.5; // 1.5 to 9.5 miles
     if (distance > 15) {
       mode = 'transit'; // Use transit for very long distances
     }

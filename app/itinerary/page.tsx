@@ -90,8 +90,9 @@ const ItineraryPage = () => {
     }
 
     try {
-      const tripId = Date.now().toString();
-      const currentDate = new Date().toISOString();
+      // Generate deterministic IDs to prevent hydration errors
+      const tripId = `trip_${mounted ? Date.now() : 1}`;
+      const currentDate = mounted ? new Date().toISOString() : new Date('2024-01-01').toISOString();
       
       const savedTrip = {
         id: tripId,
