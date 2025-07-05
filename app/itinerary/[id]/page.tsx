@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation, Plus, FileText, Download, ChevronLeft } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation, Plus, FileText, Download, ChevronLeft, Menu, X } from 'lucide-react';
 import { extractTimeAndDistance, isValidGoogleMapLink } from '../../../lib/mapUtils';
 import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../../lib/timeUtils';
 
@@ -32,6 +32,7 @@ const ItineraryDetailPage = () => {
   const [googleDocsUrl, setGoogleDocsUrl] = useState('');
   const [importingGoogleDoc, setImportingGoogleDoc] = useState(false);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newActivity, setNewActivity] = useState({
     title: '',
     description: '',
@@ -381,120 +382,179 @@ const ItineraryDetailPage = () => {
   const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Plane className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-gray-900">TravelCraft</h1>
-              <p className="text-sm text-gray-500">Premium Itinerary Builder</p>
             </div>
           </div>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         </div>
-        
-        <nav className="flex-1 p-4">
-          <div className="space-y-2">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h2>
-            <a 
-              href="/" 
-              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-            >
-              <Plane className="w-4 h-4" />
-              <span>Home</span>
-            </a>
-            <button 
-              onClick={() => router.push('/dashboard')}
-              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors w-full text-left"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Back to Dashboard</span>
-            </button>
-            <a href="/my-trips" className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">
-              <Bookmark className="w-4 h-4" />
-              <span>My Itineraries</span>
-            </a>
-            <a href="/ai-builder" className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">
-              <Star className="w-4 h-4" />
-              <span>Create Itinerary</span>
-            </a>
-          </div>
-        </nav>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
+      <div className="flex">
+        {/* Sidebar Overlay for Mobile */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div className={`
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+          fixed lg:static
+          inset-y-0 left-0
+          z-50 lg:z-auto
+          w-64 bg-white shadow-sm border-r border-gray-200
+          flex flex-col
+          transition-transform duration-300 ease-in-out
+          lg:transition-none
+        `}>
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <Plane className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900">TravelCraft</h1>
+                  <p className="text-sm text-gray-500">Premium Itinerary Builder</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors lg:hidden"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          
+          <nav className="flex-1 p-4">
+            <div className="space-y-2">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h2>
+              <a 
+                href="/" 
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Plane className="w-4 h-4" />
+                <span>Home</span>
+              </a>
+              <button 
+                onClick={() => {
+                  setSidebarOpen(false);
+                  router.push('/dashboard');
+                }}
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors w-full text-left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back to Dashboard</span>
+              </button>
+              <a 
+                href="/my-trips" 
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Bookmark className="w-4 h-4" />
+                <span>My Itineraries</span>
+              </a>
+              <a 
+                href="/ai-builder" 
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Star className="w-4 h-4" />
+                <span>Create Itinerary</span>
+              </a>
+            </div>
+          </nav>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto lg:ml-0">
+          <div className="p-3 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center space-x-4 mb-4">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center space-x-3 sm:space-x-4 mb-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors touch-target"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{trip.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{trip.name}</h1>
                 <p className="text-gray-600">{trip.destination}</p>
               </div>
             </div>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Duration</span>
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Calendar className="w-4 h-4 text-blue-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{totalDays} days</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{totalDays} days</div>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Activities</span>
                 <div className="p-2 bg-green-100 rounded-lg">
                   <MapPin className="w-4 h-4 text-green-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{activities.length}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{activities.length}</div>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Travelers</span>
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Users className="w-4 h-4 text-purple-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{trip.travelers}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{trip.travelers}</div>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Estimated Cost</span>
                 <div className="p-2 bg-yellow-100 rounded-lg">
                   <DollarSign className="w-4 h-4 text-yellow-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">${totalCost.toLocaleString()}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">${totalCost.toLocaleString()}</div>
             </div>
           </div>
 
           {/* About This Trip */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-6 sm:mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">About This Trip</h2>
               {!editingOverview && (
                 <button
                   onClick={handleEditOverview}
-                  className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200"
+                  className="px-3 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200 transition-colors touch-target"
                 >
                   Edit
                 </button>
@@ -507,19 +567,19 @@ const ItineraryDetailPage = () => {
                   <textarea
                     value={tempOverview}
                     onChange={(e) => setTempOverview(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px] touch-target"
                     placeholder="Describe your trip overview..."
                   />
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={handleSaveOverview}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors touch-target"
                     >
                       Save
                     </button>
                     <button
                       onClick={handleCancelOverviewEdit}
-                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors touch-target"
                     >
                       Cancel
                     </button>
@@ -544,59 +604,67 @@ const ItineraryDetailPage = () => {
 
           {/* Daily Timeline */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
-                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
-                    <Clock className="w-3 h-3 text-green-600" />
-                    <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
+                    <div className="hidden sm:flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
+                      <Clock className="w-3 h-3 text-green-600" />
+                      <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
                   <button
                     onClick={saveTrip}
-                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm touch-target"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    Save Changes
+                    <span className="hidden sm:inline">Save Changes</span>
+                    <span className="sm:hidden">Save</span>
                   </button>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="flex flex-wrap gap-2">
-                  {days.map(day => (
-                    <button
-                      key={day}
-                      onClick={() => setSelectedDay(day)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedDay === day
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Day {day}
-                    </button>
-                  ))}
                 </div>
                 
-                <div className="flex items-center space-x-1 ml-4">
-                  <button
-                    onClick={handleAddDay}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    title="Add day"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handleRemoveDay}
-                    disabled={totalDays <= 1}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Remove day"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                {/* Day Navigation - Mobile Optimized */}
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <div className="flex space-x-2 pb-2 min-w-max">
+                      {days.map(day => (
+                        <button
+                          key={day}
+                          onClick={() => setSelectedDay(day)}
+                          className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors touch-target flex-shrink-0 ${
+                            selectedDay === day
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          Day {day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Add/Remove Day Controls */}
+                  <div className="flex items-center justify-center space-x-3 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={handleAddDay}
+                      className="flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors touch-target"
+                      title="Add Day"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium">Add Day</span>
+                    </button>
+                    {totalDays > 1 && (
+                      <button
+                        onClick={handleRemoveDay}
+                        className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors touch-target"
+                        title="Remove Last Day"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="text-sm font-medium">Remove Day</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -904,6 +972,7 @@ const ItineraryDetailPage = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
