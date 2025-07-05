@@ -399,6 +399,13 @@ const ItineraryDetailPage = () => {
         <nav className="flex-1 p-4">
           <div className="space-y-2">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h2>
+            <a 
+              href="/" 
+              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+            >
+              <Plane className="w-4 h-4" />
+              <span>Home</span>
+            </a>
             <button 
               onClick={() => router.push('/dashboard')}
               className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors w-full text-left"
