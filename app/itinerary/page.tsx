@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation, Plus, FileText, Download, Menu, X } from 'lucide-react';
-import { extractTimeAndDistance, isValidGoogleMapLink } from '../../lib/mapUtils';
+import { extractTimeAndDistance, isValidGoogleMapLink, extractFromGoogleMapLink } from '../../lib/mapUtils';
 import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../lib/timeUtils';
 
 const ItineraryPage = () => {
@@ -34,13 +34,18 @@ const ItineraryPage = () => {
     description: '',
     time: '',
     location: '',
+    startLocation: '',
+    endLocation: '',
     cost: 0,
     type: 'activity',
     priority: 'medium',
     tips: '',
     googleMapLink: '',
     extractedDistance: '',
-    extractedTime: ''
+    extractedTime: '',
+    calculatedDistance: 0,
+    calculatedTime: 0,
+    transportMode: 'driving'
   });
 
   useEffect(() => {
@@ -163,32 +168,84 @@ const ItineraryPage = () => {
   };
 
   const handleActivityEdit = (activityId: number, field: string, value: string) => {
-    setActivities(prev => prev.map(activity => 
-      activity.id === activityId 
-        ? { ...activity, [field]: field === 'cost' ? parseInt(value) || 0 : value }
-        : activity
-    ));
+    setActivities(prev => prev.map(activity => {
+      if (activity.id === activityId) {
+        const updatedActivity = { 
+          ...activity, 
+          [field]: field === 'cost' ? parseInt(value) || 0 : value 
+        };
+        
+        // Auto-calculate distance and time for transport activities when locations change
+        if (activity.type === 'transport' && (field === 'startLocation' || field === 'endLocation')) {
+          const startLoc = field === 'startLocation' ? value : activity.startLocation;
+          const endLoc = field === 'endLocation' ? value : activity.endLocation;
+          
+          if (startLoc && endLoc) {
+            const { distance, time } = calculateTransportDistance(
+              startLoc, 
+              endLoc, 
+              activity.transportMode || 'driving'
+            );
+            updatedActivity.calculatedDistance = distance;
+            updatedActivity.calculatedTime = time;
+          }
+        }
+        
+        return updatedActivity;
+      }
+      return activity;
+    }));
   };
 
   const handleActivityGoogleMapLinkEdit = (activityId: number, value: string) => {
-    setActivities(prev => prev.map(activity => 
-      activity.id === activityId 
-        ? { ...activity, googleMapLink: value }
-        : activity
-    ));
-    
     // Extract time and distance if it's a valid Google Maps link
     if (value && isValidGoogleMapLink(value)) {
       const { distance, time } = extractTimeAndDistance(value);
-      setActivities(prev => prev.map(activity => 
-        activity.id === activityId 
-          ? { ...activity, extractedDistance: distance, extractedTime: time }
-          : activity
-      ));
+      const extractedData = extractFromGoogleMapLink(value);
+      
+      setActivities(prev => prev.map(activity => {
+        if (activity.id === activityId) {
+          const updated = { 
+            ...activity, 
+            googleMapLink: value, 
+            extractedDistance: distance, 
+            extractedTime: time 
+          };
+          
+          // Auto-fill start and end locations if available and not already set
+          if (activity.type === 'transport') {
+            if (extractedData.from && !activity.startLocation) {
+              updated.startLocation = extractedData.from;
+            }
+            if (extractedData.to && !activity.endLocation) {
+              updated.endLocation = extractedData.to;
+            }
+            
+            // Recalculate distance with new locations
+            if (updated.startLocation && updated.endLocation) {
+              const calc = calculateTransportDistance(
+                updated.startLocation, 
+                updated.endLocation, 
+                activity.transportMode || 'driving'
+              );
+              updated.calculatedDistance = calc.distance;
+              updated.calculatedTime = calc.time;
+            }
+          }
+          
+          return updated;
+        }
+        return activity;
+      }));
     } else {
       setActivities(prev => prev.map(activity => 
         activity.id === activityId 
-          ? { ...activity, extractedDistance: '', extractedTime: '' }
+          ? { 
+              ...activity, 
+              googleMapLink: value, 
+              extractedDistance: '', 
+              extractedTime: '' 
+            }
           : activity
       ));
     }
@@ -234,13 +291,18 @@ const ItineraryPage = () => {
       description: '',
       time: getDefaultTime('activity'),
       location: 'Destination', // Fixed to prevent hydration mismatch
+      startLocation: '',
+      endLocation: '',
       cost: 0,
       type: 'activity',
       priority: 'medium',
       tips: '',
       googleMapLink: '',
       extractedDistance: '',
-      extractedTime: ''
+      extractedTime: '',
+      calculatedDistance: 0,
+      calculatedTime: 0,
+      transportMode: 'driving'
     });
   };
 
@@ -260,16 +322,115 @@ const ItineraryPage = () => {
     // Extract time and distance if it's a valid Google Maps link
     if (value && isValidGoogleMapLink(value)) {
       const { distance, time } = extractTimeAndDistance(value);
-      setNewActivity(prev => ({
-        ...prev,
-        extractedDistance: distance,
-        extractedTime: time
-      }));
+      
+      // Try to extract start and end locations from the Google Maps link
+      const extractedData = extractFromGoogleMapLink(value);
+      
+      setNewActivity(prev => {
+        const updated = { 
+          ...prev, 
+          extractedDistance: distance, 
+          extractedTime: time 
+        };
+        
+        // Auto-fill start and end locations if available and not already set
+        if (extractedData.from && !prev.startLocation) {
+          updated.startLocation = extractedData.from;
+        }
+        if (extractedData.to && !prev.endLocation) {
+          updated.endLocation = extractedData.to;
+        }
+        
+        // Recalculate distance with new locations
+        if (updated.startLocation && updated.endLocation) {
+          const calc = calculateTransportDistance(
+            updated.startLocation, 
+            updated.endLocation, 
+            prev.transportMode
+          );
+          updated.calculatedDistance = calc.distance;
+          updated.calculatedTime = calc.time;
+        }
+        
+        return updated;
+      });
     } else {
       setNewActivity(prev => ({
         ...prev,
         extractedDistance: '',
         extractedTime: ''
+      }));
+    }
+  };
+
+  const calculateTransportDistance = (startLocation: string, endLocation: string, mode: string = 'driving') => {
+    if (!startLocation || !endLocation || startLocation === endLocation) {
+      return { distance: 0, time: 0 };
+    }
+    
+    // Use the existing distance estimation function
+    const distanceInfo = estimateDistanceFromLocations(startLocation, endLocation);
+    
+    // Adjust time based on transport mode
+    let timeMultiplier = 1;
+    switch (mode) {
+      case 'walking':
+        timeMultiplier = 3; // Walking takes ~3x longer than driving
+        break;
+      case 'transit':
+        timeMultiplier = 1.5; // Public transit takes ~1.5x longer
+        break;
+      case 'cycling':
+        timeMultiplier = 2; // Cycling takes ~2x longer
+        break;
+      default: // driving
+        timeMultiplier = 1;
+    }
+    
+    return {
+      distance: Math.round(distanceInfo.distance * 10) / 10, // Round to 1 decimal
+      time: Math.round(distanceInfo.duration * timeMultiplier)
+    };
+  };
+
+  const handleStartLocationChange = (value: string) => {
+    setNewActivity(prev => ({ ...prev, startLocation: value }));
+    
+    // Auto-calculate distance and time for transport activities
+    if (newActivity.type === 'transport' && value && newActivity.endLocation) {
+      const { distance, time } = calculateTransportDistance(value, newActivity.endLocation, newActivity.transportMode);
+      setNewActivity(prev => ({ 
+        ...prev, 
+        calculatedDistance: distance, 
+        calculatedTime: time 
+      }));
+    }
+  };
+
+  const handleEndLocationChange = (value: string) => {
+    setNewActivity(prev => ({ ...prev, endLocation: value }));
+    
+    // Auto-calculate distance and time for transport activities
+    if (newActivity.type === 'transport' && newActivity.startLocation && value) {
+      const { distance, time } = calculateTransportDistance(newActivity.startLocation, value, newActivity.transportMode);
+      setNewActivity(prev => ({ 
+        ...prev, 
+        calculatedDistance: distance, 
+        calculatedTime: time 
+      }));
+    }
+  };
+
+  const handleTransportModeChange = (mode: string) => {
+    setNewActivity(prev => ({ ...prev, transportMode: mode }));
+    
+    // Recalculate distance and time with new mode
+    if (newActivity.type === 'transport' && newActivity.startLocation && newActivity.endLocation) {
+      const { distance, time } = calculateTransportDistance(newActivity.startLocation, newActivity.endLocation, mode);
+      setNewActivity(prev => ({ 
+        ...prev, 
+        calculatedDistance: distance, 
+        calculatedTime: time 
       }));
     }
   };
@@ -301,13 +462,18 @@ const ItineraryPage = () => {
       description: '',
       time: '',
       location: '',
+      startLocation: '',
+      endLocation: '',
       cost: 0,
       type: 'activity',
       priority: 'medium',
       tips: '',
       googleMapLink: '',
       extractedDistance: '',
-      extractedTime: ''
+      extractedTime: '',
+      calculatedDistance: 0,
+      calculatedTime: 0,
+      transportMode: 'driving'
     });
   };
 
@@ -318,13 +484,18 @@ const ItineraryPage = () => {
       description: '',
       time: '',
       location: '',
+      startLocation: '',
+      endLocation: '',
       cost: 0,
       type: 'activity',
       priority: 'medium',
       tips: '',
       googleMapLink: '',
       extractedDistance: '',
-      extractedTime: ''
+      extractedTime: '',
+      calculatedDistance: 0,
+      calculatedTime: 0,
+      transportMode: 'driving'
     });
   };
 
@@ -1535,19 +1706,66 @@ const ItineraryPage = () => {
                                    <span>{activity.time}</span>
                                  )}
                                </div>
-                               <div className="flex items-center space-x-1">
-                                 <MapPin className="w-4 h-4" />
-                                 {isEditing ? (
-                                   <input
-                                     type="text"
-                                     value={activity.location}
-                                     onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
-                                     className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
-                                   />
-                                 ) : (
-                                   <span>{activity.location}</span>
-                                 )}
-                               </div>
+                               {/* Location Display - Different for Transport vs Other Activities */}
+                               {activity.type === 'transport' ? (
+                                 <>
+                                   <div className="flex items-center space-x-1">
+                                     <MapPin className="w-4 h-4" />
+                                     <span className="text-xs font-medium">From:</span>
+                                     {isEditing ? (
+                                       <input
+                                         type="text"
+                                         value={activity.startLocation || ''}
+                                         onChange={(e) => handleActivityEdit(activity.id, 'startLocation', e.target.value)}
+                                         className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24"
+                                         placeholder="Start"
+                                       />
+                                     ) : (
+                                       <span className="text-xs">{activity.startLocation || 'Not set'}</span>
+                                     )}
+                                   </div>
+                                   <div className="flex items-center space-x-1">
+                                     <Navigation className="w-4 h-4" />
+                                     <span className="text-xs font-medium">To:</span>
+                                     {isEditing ? (
+                                       <input
+                                         type="text"
+                                         value={activity.endLocation || ''}
+                                         onChange={(e) => handleActivityEdit(activity.id, 'endLocation', e.target.value)}
+                                         className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24"
+                                         placeholder="End"
+                                       />
+                                     ) : (
+                                       <span className="text-xs">{activity.endLocation || 'Not set'}</span>
+                                     )}
+                                   </div>
+                                   {/* Distance and Time for Transport */}
+                                   {(activity.calculatedDistance > 0 || activity.calculatedTime > 0) && (
+                                     <div className="flex items-center space-x-1">
+                                       <Car className="w-4 h-4" />
+                                       <span className="text-xs">
+                                         {activity.calculatedDistance > 0 && `${activity.calculatedDistance} mi`}
+                                         {activity.calculatedDistance > 0 && activity.calculatedTime > 0 && ' • '}
+                                         {activity.calculatedTime > 0 && formatDuration(activity.calculatedTime)}
+                                       </span>
+                                     </div>
+                                   )}
+                                 </>
+                               ) : (
+                                 <div className="flex items-center space-x-1">
+                                   <MapPin className="w-4 h-4" />
+                                   {isEditing ? (
+                                     <input
+                                       type="text"
+                                       value={activity.location}
+                                       onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
+                                       className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
+                                     />
+                                   ) : (
+                                     <span>{activity.location}</span>
+                                   )}
+                                 </div>
+                               )}
                                <div className="flex items-center space-x-1">
                                  <DollarSign className="w-4 h-4" />
                                  {isEditing ? (
@@ -1757,16 +1975,55 @@ const ItineraryPage = () => {
                              <option value="transport">Transport</option>
                            </select>
                          </div>
-                         <div>
-                           <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                           <input
-                             type="text"
-                             value={newActivity.location}
-                             onChange={(e) => handleNewActivityChange('location', e.target.value)}
-                             placeholder="Location"
-                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           />
-                         </div>
+                         {/* Conditional Location Fields based on activity type */}
+                         {newActivity.type === 'transport' ? (
+                           <>
+                             <div>
+                               <label className="block text-sm font-medium text-gray-700 mb-1">Start Location</label>
+                               <input
+                                 type="text"
+                                 value={newActivity.startLocation}
+                                 onChange={(e) => handleStartLocationChange(e.target.value)}
+                                 placeholder="Starting location"
+                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               />
+                             </div>
+                             <div>
+                               <label className="block text-sm font-medium text-gray-700 mb-1">End Location</label>
+                               <input
+                                 type="text"
+                                 value={newActivity.endLocation}
+                                 onChange={(e) => handleEndLocationChange(e.target.value)}
+                                 placeholder="Destination location"
+                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               />
+                             </div>
+                             <div>
+                               <label className="block text-sm font-medium text-gray-700 mb-1">Transport Mode</label>
+                               <select
+                                 value={newActivity.transportMode}
+                                 onChange={(e) => handleTransportModeChange(e.target.value)}
+                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               >
+                                 <option value="driving">Driving</option>
+                                 <option value="walking">Walking</option>
+                                 <option value="transit">Public Transit</option>
+                                 <option value="cycling">Cycling</option>
+                               </select>
+                             </div>
+                           </>
+                         ) : (
+                           <div>
+                             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                             <input
+                               type="text"
+                               value={newActivity.location}
+                               onChange={(e) => handleNewActivityChange('location', e.target.value)}
+                               placeholder="Location"
+                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                             />
+                           </div>
+                         )}
                          <div>
                            <label className="block text-sm font-medium text-gray-700 mb-1">Cost ($)</label>
                            <input
@@ -1801,41 +2058,68 @@ const ItineraryPage = () => {
                          />
                        </div>
                        
-                       {/* Google Map Link field for transport activities */}
+                       {/* Transport Information Display */}
                        {newActivity.type === 'transport' && (
-                         <div>
-                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                             <Link className="inline w-4 h-4 mr-1" />
-                             Google Map Link
-                           </label>
-                           <input
-                             type="url"
-                             value={newActivity.googleMapLink}
-                             onChange={(e) => handleGoogleMapLinkChange(e.target.value)}
-                             placeholder="Paste Google Maps link here to extract time and distance"
-                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           />
-                           {newActivity.googleMapLink && (
-                             <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                               {newActivity.extractedDistance && newActivity.extractedDistance !== 'Not available' && (
-                                 <div className="mb-1">
-                                   <strong>Distance:</strong> {newActivity.extractedDistance}
-                                 </div>
-                               )}
-                               {newActivity.extractedTime && newActivity.extractedTime !== 'Not available' && (
+                         <>
+                           {/* Calculated Distance and Time */}
+                           {(newActivity.calculatedDistance > 0 || newActivity.calculatedTime > 0) && (
+                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                               <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
+                                 <Car className="w-4 h-4 mr-1" />
+                                 Calculated Route Information
+                               </h4>
+                               <div className="grid grid-cols-2 gap-4 text-sm">
                                  <div>
-                                   <strong>Time:</strong> {newActivity.extractedTime}
+                                   <span className="text-blue-700 font-medium">Distance:</span>
+                                   <div className="text-blue-900">{newActivity.calculatedDistance} miles</div>
                                  </div>
-                               )}
-                               {(!newActivity.extractedDistance || newActivity.extractedDistance === 'Not available') && 
-                                (!newActivity.extractedTime || newActivity.extractedTime === 'Not available') && (
-                                 <div className="text-gray-600">
-                                   Unable to extract time and distance from this link
+                                 <div>
+                                   <span className="text-blue-700 font-medium">Est. Time:</span>
+                                   <div className="text-blue-900">{formatDuration(newActivity.calculatedTime)}</div>
                                  </div>
-                               )}
+                               </div>
+                               <div className="mt-2 text-xs text-blue-600">
+                                 Mode: {newActivity.transportMode.charAt(0).toUpperCase() + newActivity.transportMode.slice(1)}
+                               </div>
                              </div>
                            )}
-                         </div>
+
+                           {/* Google Map Link field */}
+                           <div>
+                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                               <Link className="inline w-4 h-4 mr-1" />
+                               Google Map Link (Optional)
+                             </label>
+                             <input
+                               type="url"
+                               value={newActivity.googleMapLink}
+                               onChange={(e) => handleGoogleMapLinkChange(e.target.value)}
+                               placeholder="Paste Google Maps link for more accurate time and distance"
+                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                             />
+                             {newActivity.googleMapLink && (
+                               <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                 <div className="text-gray-700 font-medium mb-1">Google Maps Data:</div>
+                                 {newActivity.extractedDistance && newActivity.extractedDistance !== 'Not available' && (
+                                   <div className="mb-1">
+                                     <strong>Distance:</strong> {newActivity.extractedDistance}
+                                   </div>
+                                 )}
+                                 {newActivity.extractedTime && newActivity.extractedTime !== 'Not available' && (
+                                   <div>
+                                     <strong>Time:</strong> {newActivity.extractedTime}
+                                   </div>
+                                 )}
+                                 {(!newActivity.extractedDistance || newActivity.extractedDistance === 'Not available') && 
+                                  (!newActivity.extractedTime || newActivity.extractedTime === 'Not available') && (
+                                   <div className="text-gray-600">
+                                     Unable to extract time and distance from this link
+                                   </div>
+                                 )}
+                               </div>
+                             )}
+                           </div>
+                         </>
                        )}
                        
                        <div className="flex items-center justify-end space-x-3 pt-4 border-t border-blue-200">
