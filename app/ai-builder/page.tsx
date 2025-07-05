@@ -107,6 +107,11 @@ const AIBuilder: React.FC = () => {
   };
 
   const handleGenerateItinerary = async () => {
+    if (!mounted) {
+      alert('Application not ready. Please try again.');
+      return;
+    }
+    
     setIsGenerating(true);
     try {
       // Validate form data before sending
@@ -157,9 +162,11 @@ const AIBuilder: React.FC = () => {
 
       if (data.success) {
         try {
-          // Save the AI-generated itinerary to localStorage
-          localStorage.setItem('tripDetails', JSON.stringify(data.tripDetails));
-          localStorage.setItem('itinerary', data.itinerary);
+          // Save the AI-generated itinerary to localStorage (only if mounted)
+          if (mounted && typeof window !== 'undefined') {
+            localStorage.setItem('tripDetails', JSON.stringify(data.tripDetails));
+            localStorage.setItem('itinerary', data.itinerary);
+          }
           
           // Redirect to the itinerary page
           router.push('/itinerary');
