@@ -90,6 +90,13 @@ const AIBuilder: React.FC = () => {
   const handleGenerateItinerary = async () => {
     setIsGenerating(true);
     try {
+      // Validate form data before sending
+      if (!formData.destination || !formData.narrative || !formData.startDate || !formData.endDate || !formData.travelers || isNaN(formData.travelers)) {
+        alert('Please fill in all required fields with valid values.');
+        setIsGenerating(false);
+        return;
+      }
+
       // Call the AI API to generate a real itinerary
       const response = await fetch('/api/generate-itinerary', {
         method: 'POST',
@@ -109,6 +116,10 @@ const AIBuilder: React.FC = () => {
           activityLevel: formData.activityLevel,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -264,7 +275,10 @@ const AIBuilder: React.FC = () => {
                   min="1"
                   max="20"
                   value={formData.travelers}
-                  onChange={(e) => handleInputChange('travelers', parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    handleInputChange('travelers', isNaN(value) ? 1 : value);
+                  }}
                   className="input-luxury w-full"
                 />
               </div>
