@@ -255,7 +255,8 @@ const ItineraryPage = () => {
     const activityToAdd = {
       ...newActivity,
       id: nextId,
-      day: addingActivity
+      day: addingActivity,
+      cost: newActivity.cost || generateEstimatedCost(newActivity.type, nextId)
     };
     
     setActivities(prev => [...prev, activityToAdd]);
@@ -456,7 +457,7 @@ const ItineraryPage = () => {
           if (cleanTitle.toLowerCase().includes('trip overview')) return;
           
           const type = determineActivityType(cleanTitle, trimmedLine);
-          const estimatedCost = extractCost(trimmedLine) || generateEstimatedCost(type);
+          const estimatedCost = extractCost(trimmedLine) || generateEstimatedCost(type, activityId);
           
           currentActivity = {
             id: activityId,
@@ -518,13 +519,17 @@ const ItineraryPage = () => {
     return costMatch ? parseInt(costMatch[1]) : 0;
   };
   
-  const generateEstimatedCost = (type: string) => {
+  const generateEstimatedCost = (type: string, activityId?: number) => {
+    // Use deterministic pseudo-random based on activity ID to prevent hydration errors
+    const seed = activityId || 1;
+    const pseudoRandom = (seed * 9301 + 49297) % 233280 / 233280;
+    
     switch (type) {
       case 'accommodation': return 0; // Usually pre-paid
-      case 'restaurant': return Math.floor(Math.random() * 60) + 20; // $20-80
-      case 'activity': return Math.floor(Math.random() * 40) + 15; // $15-55
-      case 'transport': return Math.floor(Math.random() * 30) + 10; // $10-40
-      default: return Math.floor(Math.random() * 25) + 10; // $10-35
+      case 'restaurant': return Math.floor(pseudoRandom * 60) + 20; // $20-80
+      case 'activity': return Math.floor(pseudoRandom * 40) + 15; // $15-55
+      case 'transport': return Math.floor(pseudoRandom * 30) + 10; // $10-40
+      default: return Math.floor(pseudoRandom * 25) + 10; // $10-35
     }
   };
   
@@ -576,7 +581,7 @@ const ItineraryPage = () => {
       type: "restaurant",
       time: "7:00 PM - 9:00 PM",
       location: tripDetails?.destination || 'Destination',
-      cost: 80,
+      cost: generateEstimatedCost('restaurant', 2),
       description: "Enjoy a traditional local dining experience to kick off your adventure.",
       priority: "medium",
       tips: "Reservations recommended; check for availability and book in advance."
