@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       destination, 
+      narrative,
       startDate, 
       endDate, 
       travelers, 
@@ -34,12 +35,12 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!destination || !startDate || !endDate || !travelers) {
+    if (!destination || !narrative || !startDate || !endDate || !travelers) {
       return NextResponse.json(
         { 
           success: false, 
           error: 'Missing required fields',
-          details: 'destination, startDate, endDate, and travelers are required'
+          details: 'destination, narrative, startDate, endDate, and travelers are required'
         },
         { status: 400 }
       );
@@ -48,8 +49,11 @@ export async function POST(request: NextRequest) {
     // Calculate trip duration
     const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
 
-    // Create a detailed prompt for Claude
-    const prompt = `Create a detailed travel itinerary for ${destination} with the following specifications:
+    // Create a detailed prompt for Claude that incorporates the user's narrative
+    const prompt = `Create a detailed travel itinerary for ${destination} based on this traveler's description of their ideal trip:
+
+**Traveler's Vision:**
+"${narrative}"
 
 **Trip Details:**
 - Destination: ${destination}
@@ -61,24 +65,26 @@ export async function POST(request: NextRequest) {
 - Activity level: ${activityLevel}
 - Interests: ${interests?.join(', ') || 'General travel'}
 
-**Requirements:**
-1. Create a day-by-day itinerary for all ${days} days
-2. Include specific activities, restaurants, and attractions
-3. Consider the travel style and budget constraints
-4. Tailor activities to the mentioned interests
-5. Include practical tips and recommendations
-6. Format with clear headings and bullet points
-7. Include estimated costs where relevant
-8. Add travel tips and local insights
+**Instructions:**
+Based on the traveler's narrative description above, create a highly personalized itinerary that:
+1. Addresses the specific experiences and desires mentioned in their description
+2. Matches their stated travel style and preferences
+3. Includes day-by-day activities for all ${days} days
+4. Incorporates specific restaurants, attractions, and experiences that align with their vision
+5. Considers their budget and travel style preferences
+6. Tailors activities to their mentioned interests and group type
+7. Includes practical tips and local insights
+8. Provides estimated costs where relevant
 
 **Format the response as:**
-- Trip overview with key details
+- Trip overview that references their specific goals and desires
 - Day-by-day breakdown with morning, afternoon, and evening activities
-- Practical tips and recommendations
+- Recommendations that specifically address what they're looking for
 - Budget breakdown by category
 - Local insights and cultural tips
+- Special touches that make this trip uniquely theirs
 
-Make it engaging, practical, and personalized to their preferences!`;
+Make this itinerary feel like it was crafted specifically for their vision and preferences!`;
 
     console.log('Calling Anthropic API for destination:', destination);
     console.log('Request details:', { destination, days, travelers, budget, travelStyle });

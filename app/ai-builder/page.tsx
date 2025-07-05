@@ -4,7 +4,7 @@ import { ArrowRight, ArrowLeft, MapPin, Calendar, Users, DollarSign, Plane, Hear
 import { useRouter } from 'next/navigation';
 
 const steps = [
-  { id: 'destination', title: 'Destination', description: 'Where would you like to go?' },
+  { id: 'destination', title: 'Trip Vision', description: 'Tell us about your dream trip' },
   { id: 'travel-details', title: 'Travel Details', description: 'When and with whom?' },
   { id: 'preferences', title: 'Preferences', description: 'What do you enjoy?' },
   { id: 'style', title: 'Travel Style', description: 'How do you like to travel?' },
@@ -45,6 +45,7 @@ const AIBuilder: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<any>({
     destination: '',
+    narrative: '',
     startDate: '',
     endDate: '',
     travelers: 1,
@@ -97,6 +98,7 @@ const AIBuilder: React.FC = () => {
         },
         body: JSON.stringify({
           destination: formData.destination,
+          narrative: formData.narrative,
           startDate: formData.startDate,
           endDate: formData.endDate,
           travelers: formData.travelers,
@@ -159,7 +161,7 @@ const AIBuilder: React.FC = () => {
     const step = steps[currentStep];
     switch (step.id) {
       case 'destination':
-        return formData.destination.trim() !== '';
+        return formData.destination.trim() !== '' && formData.narrative.trim() !== '';
       case 'travel-details':
         return formData.startDate && formData.endDate && formData.travelers > 0;
       case 'preferences':
@@ -179,20 +181,51 @@ const AIBuilder: React.FC = () => {
     switch (step.id) {
       case 'destination':
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="text-center">
               <MapPin className="h-12 w-12 text-gold-warm mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-luxury-primary mb-2">Where to?</h2>
-              <p className="text-gray-medium">Choose your dream destination</p>
+              <h2 className="text-2xl font-bold text-luxury-primary mb-2">Tell us about your dream trip</h2>
+              <p className="text-gray-medium">The more details you share, the better we can personalize your itinerary</p>
             </div>
-            <div className="max-w-md mx-auto">
-              <input
-                type="text"
-                placeholder="e.g., Paris, France"
-                value={formData.destination}
-                onChange={(e) => handleInputChange('destination', e.target.value)}
-                className="input-luxury w-full text-center text-lg"
-              />
+            
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Destination Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-dark mb-2">
+                  Where would you like to go? *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Paris, France or Tokyo, Japan"
+                  value={formData.destination}
+                  onChange={(e) => handleInputChange('destination', e.target.value)}
+                  className="input-luxury w-full"
+                />
+              </div>
+
+              {/* Narrative Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-dark mb-2">
+                  Describe your ideal trip *
+                </label>
+                <textarea
+                  placeholder="Tell us about your dream trip in detail... What kind of experiences are you looking for? Are you celebrating something special? What's your travel style? Any specific activities or places you want to include? The more you share, the better we can tailor your perfect itinerary!"
+                  value={formData.narrative}
+                  onChange={(e) => handleInputChange('narrative', e.target.value)}
+                  className="input-luxury w-full min-h-[120px] resize-vertical"
+                  rows={6}
+                />
+                <p className="text-xs text-gray-medium mt-2">
+                  💡 Example: "I'm planning a romantic anniversary trip to Paris with my partner. We love art, fine dining, and exploring historic neighborhoods. We'd like a mix of iconic landmarks and hidden gems. Budget is flexible for special experiences. We prefer boutique hotels and enjoy both cultural activities and relaxing moments."
+                </p>
+              </div>
+
+              {/* Character count */}
+              <div className="text-right">
+                <span className="text-xs text-gray-medium">
+                  {formData.narrative.length} characters
+                </span>
+              </div>
             </div>
           </div>
         );
@@ -372,37 +405,62 @@ const AIBuilder: React.FC = () => {
               <p className="text-gray-medium">Review your preferences and let AI craft your perfect itinerary</p>
             </div>
             
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto space-y-6">
               <div className="card-luxury p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-medium">Destination</span>
                   <span className="font-medium text-luxury-primary">{formData.destination}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-medium">Dates</span>
-                  <span className="font-medium text-luxury-primary">
-                    {formData.startDate} to {formData.endDate}
-                  </span>
+                
+                {/* Trip Vision/Narrative */}
+                <div className="pt-4 border-t border-gray-200">
+                  <span className="text-gray-medium text-sm">Your Trip Vision</span>
+                  <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-dark leading-relaxed">
+                      "{formData.narrative}"
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-medium">Travelers</span>
-                  <span className="font-medium text-luxury-primary">{formData.travelers}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-medium">Budget</span>
-                  <span className="font-medium text-luxury-primary">{formData.budget}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-medium">Travel Style</span>
-                  <span className="font-medium text-luxury-primary">
-                    {travelStyles.find(s => s.id === formData.travelStyle)?.label}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-medium">Interests</span>
-                  <span className="font-medium text-luxury-primary">
-                    {formData.interests.length} selected
-                  </span>
+                
+                <div className="pt-4 border-t border-gray-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-medium">Dates</span>
+                    <span className="font-medium text-luxury-primary">
+                      {formData.startDate} to {formData.endDate}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-medium">Travelers</span>
+                    <span className="font-medium text-luxury-primary">{formData.travelers}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-medium">Budget</span>
+                    <span className="font-medium text-luxury-primary">{formData.budget}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-medium">Travel Style</span>
+                    <span className="font-medium text-luxury-primary">
+                      {travelStyles.find(s => s.id === formData.travelStyle)?.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-medium">Group Type</span>
+                    <span className="font-medium text-luxury-primary">
+                      {groupTypes.find(g => g.id === formData.groupType)?.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-medium">Activity Level</span>
+                    <span className="font-medium text-luxury-primary">
+                      {activityLevels.find(a => a.id === formData.activityLevel)?.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-medium">Interests</span>
+                    <span className="font-medium text-luxury-primary">
+                      {formData.interests.length} selected
+                    </span>
+                  </div>
                 </div>
               </div>
               
