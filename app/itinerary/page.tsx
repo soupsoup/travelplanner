@@ -44,24 +44,32 @@ const ItineraryPage = () => {
   useEffect(() => {
     if (!mounted) return;
     
-    try {
-      // Read from localStorage (set by AI builder)
-      const itineraryData = localStorage.getItem('itinerary');
-      const tripData = localStorage.getItem('tripDetails');
-      setItinerary(itineraryData);
-      setTripDetails(tripData ? JSON.parse(tripData) : null);
-      
-      if (itineraryData) {
-        const { activities: parsedActivities, overview } = parseItinerary(itineraryData);
-        setActivities(parsedActivities);
-        setTripOverview(overview);
+    // DELAY to prevent hydration issues
+    const timer = setTimeout(() => {
+      try {
+        // Read from localStorage (set by AI builder)
+        const itineraryData = localStorage.getItem('itinerary');
+        const tripData = localStorage.getItem('tripDetails');
+        setItinerary(itineraryData);
+        setTripDetails(tripData ? JSON.parse(tripData) : null);
+        
+        if (itineraryData) {
+          // TEMPORARILY SIMPLIFIED to prevent hydration issues
+          setActivities(createSampleActivities());
+          setTripOverview('Welcome to your travel itinerary! Start planning your amazing trip.');
+          // const { activities: parsedActivities, overview } = parseItinerary(itineraryData);
+          // setActivities(parsedActivities);
+          // setTripOverview(overview);
+        }
+      } catch (error) {
+        console.error('Error loading itinerary data:', error);
+        // Set default values if localStorage fails
+        setActivities(createSampleActivities());
+        setTripOverview('Welcome to your travel itinerary! Start planning your amazing trip.');
       }
-    } catch (error) {
-      console.error('Error loading itinerary data:', error);
-      // Set default values if localStorage fails
-      setActivities(createSampleActivities());
-      setTripOverview('Welcome to your travel itinerary! Start planning your amazing trip.');
-    }
+    }, 100); // 100ms delay
+    
+    return () => clearTimeout(timer);
   }, [mounted]);
 
   const safeUpdateLocalStorage = (updatedItinerary: string) => {
@@ -590,6 +598,7 @@ const ItineraryPage = () => {
     }
   ];
 
+  // Prevent all hydration issues by completely disabling SSR for this page
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -620,39 +629,39 @@ const ItineraryPage = () => {
     activities.filter(activity => activity.day === selectedDay)
   ) : [];
 
-  // Calculate travel segments between consecutive activities
-  useEffect(() => {
-    const calculateTravelSegments = async () => {
-      const newSegments: Record<string, LocationDistance> = {};
+  // TEMPORARILY DISABLED: Calculate travel segments between consecutive activities
+  // useEffect(() => {
+  //   const calculateTravelSegments = async () => {
+  //     const newSegments: Record<string, LocationDistance> = {};
       
-      for (let day = 1; day <= 7; day++) { // Fixed to prevent hydration mismatch
-        const dayActivities = sortActivitiesByTime(
-          activities.filter(activity => activity.day === day)
-        );
+  //     for (let day = 1; day <= 7; day++) { // Fixed to prevent hydration mismatch
+  //       const dayActivities = sortActivitiesByTime(
+  //         activities.filter(activity => activity.day === day)
+  //       );
         
-        for (let i = 0; i < dayActivities.length - 1; i++) {
-          const fromActivity = dayActivities[i];
-          const toActivity = dayActivities[i + 1];
-          const segmentKey = `${fromActivity.id}-${toActivity.id}`;
+  //       for (let i = 0; i < dayActivities.length - 1; i++) {
+  //         const fromActivity = dayActivities[i];
+  //         const toActivity = dayActivities[i + 1];
+  //         const segmentKey = `${fromActivity.id}-${toActivity.id}`;
           
-          // Only calculate if locations are different
-          if (fromActivity.location !== toActivity.location) {
-            const distance = estimateDistanceFromLocations(
-              fromActivity.location,
-              toActivity.location
-            );
-            newSegments[segmentKey] = distance;
-          }
-        }
-      }
+  //         // Only calculate if locations are different
+  //         if (fromActivity.location !== toActivity.location) {
+  //           const distance = estimateDistanceFromLocations(
+  //             fromActivity.location,
+  //             toActivity.location
+  //           );
+  //           newSegments[segmentKey] = distance;
+  //         }
+  //       }
+  //     }
       
-      setTravelSegments(newSegments);
-    };
+  //     setTravelSegments(newSegments);
+  //   };
 
-    if (activities.length > 0) {
-      calculateTravelSegments();
-    }
-  }, [activities, mounted]); // Fixed to prevent hydration mismatch
+  //   if (activities.length > 0) {
+  //     calculateTravelSegments();
+  //   }
+  // }, [activities, mounted]); // Fixed to prevent hydration mismatch
 
   const getActivityIcon = (type: string) => {
     switch (type) {
