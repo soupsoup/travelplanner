@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a detailed prompt for Claude to provide specific activity advice
-    const prompt = `Provide detailed, practical advice for this specific travel activity:
+    const prompt = `Provide detailed, practical advice for this specific travel activity. Format your response with clear sections using ** for headers:
 
 **Activity Details:**
 - Title: ${activity.title}
@@ -51,16 +51,27 @@ export async function POST(request: NextRequest) {
 - Travel style: ${travelStyle || 'Not specified'}
 - Group type: ${groupType || 'Not specified'}
 
-**Please provide specific advice on:**
-1. **Best practices and tips** for enjoying this activity
-2. **What to expect** - timing, crowds, preparation needed
-3. **Money-saving tips** or ways to enhance the experience
-4. **What to bring or wear** if relevant
-5. **Alternative options** or similar activities nearby
-6. **Local insights** that most tourists don't know
-7. **Booking recommendations** if reservations are needed
+Please structure your advice with the following sections (use ** around section titles):
 
-Keep the advice practical, specific, and actionable. Focus on insider tips and local knowledge that would enhance their experience.`;
+**Best Practices and Tips**
+Provide 2-3 key tips for enjoying this activity, including timing recommendations and how to avoid crowds.
+
+**What to Expect**
+Describe what visitors should expect - duration, crowds, difficulty level, and any preparation needed.
+
+**Money-Saving Tips and Enhancements**
+Share specific ways to save money or enhance the experience, including any free alternatives or upgrades worth considering.
+
+**What to Bring or Wear**
+List essential items, appropriate clothing, or gear needed for this activity.
+
+**Local Insights**
+Share insider knowledge that most tourists don't know about, including hidden gems or local customs.
+
+**Booking Recommendations**
+Advise on reservations, best times to visit, and any advance planning needed.
+
+Keep each section concise but informative. Focus on practical, actionable advice that enhances their experience.`;
 
     console.log('Getting AI advice for activity:', activity.title);
     

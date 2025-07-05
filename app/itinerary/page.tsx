@@ -666,6 +666,140 @@ const ItineraryPage = () => {
     );
   };
 
+  const formatAIAdvice = (tips: string) => {
+    if (!tips.includes('AI Recommendations:')) {
+      return null;
+    }
+
+    const sections = tips.split('AI Recommendations:');
+    const originalTips = sections[0]?.trim();
+    const aiAdvice = sections[1]?.trim();
+
+    if (!aiAdvice) return null;
+
+    // Parse AI advice into structured sections
+    const parseAIAdvice = (text: string) => {
+      const sections = [];
+      
+      // Split by numbered points or bullet points
+      const lines = text.split(/\n+/).filter(line => line.trim());
+      let currentSection = null;
+      let currentContent = [];
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        
+        // Check if this is a section header (contains ** or numbered points)
+        if (trimmed.includes('**') || /^\d+\./.test(trimmed) || trimmed.startsWith('•')) {
+          // Save previous section if it exists
+          if (currentSection) {
+            sections.push({
+              title: currentSection,
+              content: currentContent.join(' ').trim()
+            });
+          }
+          
+          // Start new section
+          currentSection = trimmed.replace(/\*\*/g, '').replace(/^\d+\.\s*/, '').replace(/^•\s*/, '');
+          currentContent = [];
+        } else if (currentSection) {
+          // Add to current section content
+          currentContent.push(trimmed);
+        } else {
+          // If no section started yet, treat as general advice
+          if (!currentSection) {
+            currentSection = "General Recommendations";
+            currentContent = [trimmed];
+          } else {
+            currentContent.push(trimmed);
+          }
+        }
+      }
+
+      // Don't forget the last section
+      if (currentSection) {
+        sections.push({
+          title: currentSection,
+          content: currentContent.join(' ').trim()
+        });
+      }
+
+      return sections;
+    };
+
+    const aiSections = parseAIAdvice(aiAdvice);
+
+    return {
+      originalTips,
+      aiSections
+    };
+  };
+
+  const renderFormattedTips = (activity: any, isEditing: boolean) => {
+    const formattedAdvice = formatAIAdvice(activity.tips || '');
+    
+    if (!formattedAdvice) {
+      // Regular tips display
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          {isEditing ? (
+            <textarea
+              value={activity.tips}
+              onChange={(e) => handleActivityEdit(activity.id, 'tips', e.target.value)}
+              placeholder="Add tips or recommendations..."
+              className="w-full text-sm text-blue-800 bg-transparent border-none resize-none focus:outline-none"
+              rows={2}
+            />
+          ) : (
+            <p className="text-sm text-blue-800">{activity.tips}</p>
+          )}
+        </div>
+      );
+    }
+
+    // Enhanced AI advice display
+    return (
+      <div className="space-y-4">
+        {/* Original Tips (if any) */}
+        {formattedAdvice.originalTips && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <MessageSquare className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Tips</span>
+            </div>
+            <p className="text-sm text-blue-800">{formattedAdvice.originalTips}</p>
+          </div>
+        )}
+
+        {/* AI Advice Sections */}
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2 mb-3">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            <span className="text-sm font-semibold text-purple-800">AI Recommendations</span>
+          </div>
+          
+          <div className="space-y-3">
+            {formattedAdvice.aiSections.map((section, index) => (
+              <div key={index} className="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-purple-100">
+                <div className="flex items-start space-x-2">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-purple-900 mb-1">
+                      {section.title}
+                    </h4>
+                    <p className="text-sm text-purple-800 leading-relaxed">
+                      {section.content}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -1014,19 +1148,7 @@ const ItineraryPage = () => {
                              </div>
                              
                              {(activity.tips || isEditing) && (
-                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                 {isEditing ? (
-                                   <textarea
-                                     value={activity.tips}
-                                     onChange={(e) => handleActivityEdit(activity.id, 'tips', e.target.value)}
-                                     placeholder="Add tips or recommendations..."
-                                     className="w-full text-sm text-blue-800 bg-transparent border-none resize-none focus:outline-none"
-                                     rows={2}
-                                   />
-                                 ) : (
-                                   <p className="text-sm text-blue-800">{activity.tips}</p>
-                                 )}
-                               </div>
+                               renderFormattedTips(activity, isEditing)
                              )}
                              
                              {/* Google Map Link field for transport activities */}
