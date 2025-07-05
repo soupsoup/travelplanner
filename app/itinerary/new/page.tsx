@@ -1,233 +1,193 @@
 "use client";
-import React, { useState } from 'react';
-import { Plus, X, Calendar, Activity, Hotel, Save, Link } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { extractTimeAndDistance, isValidGoogleMapLink } from '../../../lib/mapUtils';
 
-interface ActivityForm {
+import React, { useState, useEffect } from 'react';
+import { MapPin, Calendar, Users, DollarSign, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+interface BudgetCategory {
+  accommodation: number;
+  transportation: number;
+  food: number;
+  activities: number;
+  shopping: number;
+  miscellaneous: number;
+}
+
+interface Activity {
   id: string;
   title: string;
   description: string;
   location: string;
-  startTime: string;
-  endTime: string;
-  category: string;
+  time: string;
   cost: number;
-  notes: string;
-  googleMapLink?: string;
-  extractedDistance?: string;
-  extractedTime?: string;
-}
-
-interface AccommodationForm {
-  id: string;
-  name: string;
   type: string;
-  location: string;
-  cost: number;
-  notes: string;
+  tips: string;
 }
 
-interface DayForm {
-  dayNumber: number;
+interface DayItinerary {
   date: string;
-  activities: ActivityForm[];
-  accommodations: AccommodationForm[];
-  notes: string;
+  activities: Activity[];
 }
 
 const NewItinerary: React.FC = () => {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [tripDetails, setTripDetails] = useState({
     name: '',
     destination: '',
     startDate: '',
     endDate: '',
     travelers: 1,
     budget: {
-      accommodation: 0,
-      food: 0,
-      activities: 0,
-      transportation: 0,
-      shopping: 0,
-      miscellaneous: 0,
+      total: 0,
+      categories: {
+        accommodation: 0,
+        transportation: 0,
+        food: 0,
+        activities: 0,
+        shopping: 0,
+        miscellaneous: 0,
+      } as BudgetCategory,
     },
-    notes: '',
   });
 
-  const [days, setDays] = useState<DayForm[]>([]);
-  const [activeDay, setActiveDay] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
+
+  useEffect(() => {
+    generateDays();
+  }, [tripDetails.startDate, tripDetails.endDate]);
 
   const generateDays = () => {
-    if (!formData.startDate || !formData.endDate) return;
-    
-    const start = new Date(formData.startDate);
-    const end = new Date(formData.endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
-    const newDays: DayForm[] = [];
-    for (let i = 0; i < diffDays; i++) {
-      const currentDate = new Date(start);
-      currentDate.setDate(start.getDate() + i);
-      
-      newDays.push({
-        dayNumber: i + 1,
-        date: currentDate.toISOString().split('T')[0],
-        activities: [],
-        accommodations: [],
-        notes: '',
+    if (!tripDetails.startDate || !tripDetails.endDate) return;
+
+    const start = new Date(tripDetails.startDate);
+    const end = new Date(tripDetails.endDate);
+    const days: DayItinerary[] = [];
+
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+      days.push({
+        date: date.toISOString().split('T')[0],
+        activities: []
       });
     }
-    
-    setDays(newDays);
-    setActiveDay(0);
+
+    setItinerary(days);
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setTripDetails(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleBudgetChange = (category: keyof BudgetCategory, value: number) => {
+    setTripDetails(prev => ({
+      ...prev,
+      budget: {
+        ...prev.budget,
+        categories: {
+          ...prev.budget.categories,
+          [category]: value
+        },
+        total: Object.values({
+          ...prev.budget.categories,
+          [category]: value
+        }).reduce((sum, val) => sum + val, 0)
+      }
+    }));
   };
 
   const addActivity = (dayIndex: number) => {
-    const newActivity: ActivityForm = {
+    const newActivity: Activity = {
       id: Date.now().toString(),
-      title: '',
+      title: 'New Activity',
       description: '',
       location: '',
-      startTime: '',
-      endTime: '',
-      category: 'activity',
+      time: '10:00 AM',
       cost: 0,
-      notes: '',
+      type: 'activity',
+      tips: ''
     };
 
-    const updatedDays = [...days];
-    updatedDays[dayIndex].activities.push(newActivity);
-    setDays(updatedDays);
+    setItinerary(prev => {
+      const updated = [...prev];
+      updated[dayIndex].activities.push(newActivity);
+      return updated;
+    });
   };
 
-  const removeActivity = (dayIndex: number, activityId: string) => {
-    const updatedDays = [...days];
-    updatedDays[dayIndex].activities = updatedDays[dayIndex].activities.filter(
-      activity => activity.id !== activityId
-    );
-    setDays(updatedDays);
-  };
-
-  const updateActivity = (dayIndex: number, activityId: string, field: string, value: any) => {
-    const updatedDays = [...days];
-    const activityIndex = updatedDays[dayIndex].activities.findIndex(
-      activity => activity.id === activityId
-    );
-    
-    if (activityIndex !== -1) {
-      updatedDays[dayIndex].activities[activityIndex] = {
-        ...updatedDays[dayIndex].activities[activityIndex],
-        [field]: value,
+  const updateActivity = (dayIndex: number, activityIndex: number, field: string, value: any) => {
+    setItinerary(prev => {
+      const updated = [...prev];
+      updated[dayIndex].activities[activityIndex] = {
+        ...updated[dayIndex].activities[activityIndex],
+        [field]: value
       };
-      setDays(updatedDays);
-    }
+      return updated;
+    });
   };
 
-  const updateActivityGoogleMapLink = (dayIndex: number, activityId: string, value: string) => {
-    const updatedDays = [...days];
-    const activityIndex = updatedDays[dayIndex].activities.findIndex(
-      activity => activity.id === activityId
-    );
-    
-    if (activityIndex !== -1) {
-      updatedDays[dayIndex].activities[activityIndex] = {
-        ...updatedDays[dayIndex].activities[activityIndex],
-        googleMapLink: value,
-      };
-      
-      // Extract time and distance if it's a valid Google Maps link
-      if (value && isValidGoogleMapLink(value)) {
-        const { distance, time } = extractTimeAndDistance(value);
-        updatedDays[dayIndex].activities[activityIndex] = {
-          ...updatedDays[dayIndex].activities[activityIndex],
-          extractedDistance: distance,
-          extractedTime: time,
-        };
-      } else {
-        updatedDays[dayIndex].activities[activityIndex] = {
-          ...updatedDays[dayIndex].activities[activityIndex],
-          extractedDistance: '',
-          extractedTime: '',
-        };
-      }
-      
-      setDays(updatedDays);
-    }
+  const deleteActivity = (dayIndex: number, activityIndex: number) => {
+    setItinerary(prev => {
+      const updated = [...prev];
+      updated[dayIndex].activities.splice(activityIndex, 1);
+      return updated;
+    });
   };
 
-  const addAccommodation = (dayIndex: number) => {
-    const newAccommodation: AccommodationForm = {
+  const saveItinerary = () => {
+    const savedItinerary = {
       id: Date.now().toString(),
-      name: '',
-      type: 'hotel',
-      location: '',
-      cost: 0,
-      notes: '',
+      name: tripDetails.name,
+      destination: tripDetails.destination,
+      startDate: tripDetails.startDate,
+      endDate: tripDetails.endDate,
+      travelers: tripDetails.travelers,
+      budget: tripDetails.budget,
+      status: 'planning',
+      image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+      activitiesCount: itinerary.reduce((sum, day) => sum + day.activities.length, 0),
+      completedActivities: 0,
+      tripDetails: tripDetails,
+      activities: itinerary,
+      overview: `A ${itinerary.length}-day trip to ${tripDetails.destination}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      daysCount: itinerary.length
     };
 
-    const updatedDays = [...days];
-    updatedDays[dayIndex].accommodations.push(newAccommodation);
-    setDays(updatedDays);
+    // Save to localStorage
+    const existingTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
+    existingTrips.push(savedItinerary);
+    localStorage.setItem('savedTrips', JSON.stringify(existingTrips));
+
+    // Redirect to dashboard
+    router.push('/dashboard');
   };
 
-  const removeAccommodation = (dayIndex: number, accommodationId: string) => {
-    const updatedDays = [...days];
-    updatedDays[dayIndex].accommodations = updatedDays[dayIndex].accommodations.filter(
-      accommodation => accommodation.id !== accommodationId
-    );
-    setDays(updatedDays);
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      console.log('Saving itinerary:', { formData, days });
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Error saving itinerary:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getTotalBudget = () => {
-    return Object.values(formData.budget).reduce((total, amount) => total + amount, 0);
-  };
+  const currentDay = itinerary[currentDayIndex];
 
   return (
-    <div className="min-h-screen bg-gray-soft">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white-crisp border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-bold text-luxury-primary">Create New Itinerary</h1>
+            <div className="flex items-center">
+              <Link href="/dashboard" className="text-blue-800 hover:text-blue-900 mr-4">
+                <ChevronLeft className="h-6 w-6" />
+              </Link>
+              <h1 className="text-xl font-bold text-blue-800">Create New Itinerary</h1>
+            </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.back()}
-                className="btn-outline"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isLoading}
+                onClick={saveItinerary}
                 className="btn-primary"
+                disabled={!tripDetails.name || !tripDetails.destination || !tripDetails.startDate || !tripDetails.endDate}
               >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white-crisp mr-2"></div>
-                    Saving...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Itinerary
-                  </span>
-                )}
+                Save Itinerary
               </button>
             </div>
           </div>
@@ -235,338 +195,250 @@ const NewItinerary: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Sidebar - Trip Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Trip Details */}
           <div className="lg:col-span-1">
-            <div className="card-luxury p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-luxury-primary">Trip Details</h2>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">Trip Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="input-luxury w-full"
-                  placeholder="My Amazing Trip"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">Destination</label>
-                <input
-                  type="text"
-                  value={formData.destination}
-                  onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                  className="input-luxury w-full"
-                  placeholder="Paris, France"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
+            <div className="card-luxury p-6 mb-6">
+              <h2 className="text-lg font-semibold text-blue-800">Trip Details</h2>
+              <div className="space-y-4 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-dark mb-2">Start Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Trip Name</label>
                   <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                    type="text"
+                    placeholder="My Amazing Trip"
+                    value={tripDetails.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
                     className="input-luxury w-full"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-dark mb-2">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Destination</label>
                   <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                    type="text"
+                    placeholder="Paris, France"
+                    value={tripDetails.destination}
+                    onChange={(e) => handleInputChange('destination', e.target.value)}
+                    className="input-luxury w-full"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input
+                      type="date"
+                      value={tripDetails.startDate}
+                      onChange={(e) => handleInputChange('startDate', e.target.value)}
+                      className="input-luxury w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input
+                      type="date"
+                      value={tripDetails.endDate}
+                      onChange={(e) => handleInputChange('endDate', e.target.value)}
+                      className="input-luxury w-full"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Travelers</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={tripDetails.travelers}
+                    onChange={(e) => handleInputChange('travelers', parseInt(e.target.value))}
                     className="input-luxury w-full"
                   />
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">Travelers</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.travelers}
-                  onChange={(e) => setFormData({...formData, travelers: parseInt(e.target.value)})}
-                  className="input-luxury w-full"
-                />
-              </div>
-
-              <button
-                onClick={generateDays}
-                className="btn-secondary w-full"
-                disabled={!formData.startDate || !formData.endDate}
-              >
-                Generate Days
-              </button>
-
-              {/* Budget Section */}
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-md font-semibold text-luxury-primary mb-4">Budget Planning</h3>
-                
-                <div className="space-y-3">
-                  {Object.entries(formData.budget).map(([category, amount]) => (
-                    <div key={category} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-dark capitalize">{category}</span>
+            {/* Budget Planning */}
+            <div className="card-luxury p-6">
+              <h3 className="text-md font-semibold text-blue-800 mb-4">Budget Planning</h3>
+              <div className="space-y-3">
+                {Object.entries(tripDetails.budget.categories).map(([category, amount]) => (
+                  <div key={category} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700 capitalize">{category}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">$</span>
                       <input
                         type="number"
                         min="0"
                         value={amount}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          budget: {
-                            ...formData.budget,
-                            [category]: parseInt(e.target.value) || 0
-                          }
-                        })}
-                        className="input-luxury w-20 text-sm"
+                        onChange={(e) => handleBudgetChange(category as keyof BudgetCategory, parseInt(e.target.value) || 0)}
+                        className="w-20 text-right text-sm border border-gray-300 rounded px-2 py-1"
                       />
                     </div>
-                  ))}
-                </div>
-                
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-luxury-primary">Total Budget</span>
-                    <span className="font-bold text-luxury-primary text-lg">
-                      ${getTotalBudget().toLocaleString()}
-                    </span>
                   </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-blue-800">Total Budget</span>
+                  <span className="font-bold text-blue-800 text-lg">
+                    ${tripDetails.budget.total.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Main Content - Days */}
-          <div className="lg:col-span-3">
-            {days.length === 0 ? (
+          {/* Right Column - Itinerary */}
+          <div className="lg:col-span-2">
+            {itinerary.length === 0 ? (
               <div className="card-luxury p-12 text-center">
-                <Calendar className="h-12 w-12 text-gray-medium mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-dark mb-2">No days generated yet</h3>
-                <p className="text-gray-medium">
-                  Set your travel dates and click "Generate Days" to start building your itinerary
+                <Calendar className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-700 mb-2">No days generated yet</h3>
+                <p className="text-gray-600">
+                  Please select your start and end dates to generate your itinerary days.
                 </p>
               </div>
             ) : (
               <div className="space-y-6">
                 {/* Day Navigation */}
-                <div className="flex space-x-2 overflow-x-auto pb-2">
-                  {days.map((day, index) => (
-                    <button
-                      key={day.dayNumber}
-                      onClick={() => setActiveDay(index)}
-                      className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                        activeDay === index
-                          ? 'bg-navy-deep text-white-crisp'
-                          : 'bg-white-crisp text-gray-dark hover:bg-gray-100'
-                      }`}
-                    >
-                      Day {day.dayNumber}
-                      <span className="block text-xs opacity-75">
-                        {new Date(day.date).toLocaleDateString()}
-                      </span>
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setCurrentDayIndex(Math.max(0, currentDayIndex - 1))}
+                    disabled={currentDayIndex === 0}
+                    className={`p-2 rounded-lg transition-colors ${
+                      currentDayIndex === 0 
+                        ? 'bg-blue-800 text-white' 
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <div className="flex-1 mx-4">
+                    <div className="flex space-x-2 overflow-x-auto">
+                      {itinerary.map((day, index) => (
+                        <button
+                          key={day.date}
+                          onClick={() => setCurrentDayIndex(index)}
+                          className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                            currentDayIndex === index
+                              ? 'bg-blue-800 text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Day {index + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setCurrentDayIndex(Math.min(itinerary.length - 1, currentDayIndex + 1))}
+                    disabled={currentDayIndex === itinerary.length - 1}
+                    className={`p-2 rounded-lg transition-colors ${
+                      currentDayIndex === itinerary.length - 1
+                        ? 'bg-blue-800 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
                 </div>
 
-                {/* Active Day Content */}
-                {days[activeDay] && (
+                {/* Current Day Content */}
+                {currentDay && (
                   <div className="card-luxury p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-bold text-luxury-primary">
-                        Day {days[activeDay].dayNumber} - {new Date(days[activeDay].date).toLocaleDateString()}
+                      <h2 className="text-xl font-bold text-blue-800">
+                        Day {currentDayIndex + 1} - {new Date(currentDay.date).toLocaleDateString()}
                       </h2>
+                      <button
+                        onClick={() => addActivity(currentDayIndex)}
+                        className="btn-primary"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Activity
+                      </button>
                     </div>
 
-                    {/* Activities Section */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-luxury-primary flex items-center">
-                          <Activity className="h-5 w-5 mr-2" />
-                          Activities
-                        </h3>
-                        <button
-                          onClick={() => addActivity(activeDay)}
-                          className="btn-secondary text-sm"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Activity
-                        </button>
-                      </div>
-
-                      <div className="space-y-4">
-                        {days[activeDay].activities.map((activity) => (
-                          <div key={activity.id} className="bg-gray-50 rounded-xl p-4">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1 space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <input
-                                    type="text"
-                                    placeholder="Activity title"
-                                    value={activity.title}
-                                    onChange={(e) => updateActivity(activeDay, activity.id, 'title', e.target.value)}
-                                    className="input-luxury"
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="Location"
-                                    value={activity.location}
-                                    onChange={(e) => updateActivity(activeDay, activity.id, 'location', e.target.value)}
-                                    className="input-luxury"
-                                  />
-                                  <input
-                                    type="time"
-                                    value={activity.startTime}
-                                    onChange={(e) => updateActivity(activeDay, activity.id, 'startTime', e.target.value)}
-                                    className="input-luxury"
-                                  />
-                                  <input
-                                    type="time"
-                                    value={activity.endTime}
-                                    onChange={(e) => updateActivity(activeDay, activity.id, 'endTime', e.target.value)}
-                                    className="input-luxury"
-                                  />
-                                </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  <select
-                                    value={activity.category}
-                                    onChange={(e) => updateActivity(activeDay, activity.id, 'category', e.target.value)}
-                                    className="input-luxury"
-                                  >
-                                    <option value="activity">Activity</option>
-                                    <option value="restaurant">Restaurant</option>
-                                    <option value="attraction">Attraction</option>
-                                    <option value="shopping">Shopping</option>
-                                    <option value="entertainment">Entertainment</option>
-                                    <option value="other">Transport</option>
-                                  </select>
-                                  <input
-                                    type="number"
-                                    placeholder="Cost ($)"
-                                    value={activity.cost}
-                                    onChange={(e) => updateActivity(activeDay, activity.id, 'cost', parseInt(e.target.value) || 0)}
-                                    className="input-luxury"
-                                    min="0"
-                                  />
-                                  <div></div>
-                                </div>
-                                
-                                <textarea
-                                  placeholder="Description"
-                                  value={activity.description}
-                                  onChange={(e) => updateActivity(activeDay, activity.id, 'description', e.target.value)}
-                                  className="input-luxury"
-                                  rows={2}
-                                />
-                                
-                                <textarea
-                                  placeholder="Notes"
-                                  value={activity.notes}
-                                  onChange={(e) => updateActivity(activeDay, activity.id, 'notes', e.target.value)}
-                                  className="input-luxury"
-                                  rows={2}
-                                />
-                                
-                                {/* Google Map Link field for transport activities */}
-                                {activity.category === 'other' && (
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      <Link className="inline w-4 h-4 mr-1" />
-                                      Google Map Link
-                                    </label>
-                                    <input
-                                      type="url"
-                                      placeholder="Paste Google Maps link here to extract time and distance"
-                                      value={activity.googleMapLink || ''}
-                                      onChange={(e) => updateActivityGoogleMapLink(activeDay, activity.id, e.target.value)}
-                                      className="input-luxury"
-                                    />
-                                    {activity.googleMapLink && (
-                                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                                        {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
-                                          <div className="mb-1">
-                                            <strong>Distance:</strong> {activity.extractedDistance}
-                                          </div>
-                                        )}
-                                        {activity.extractedTime && activity.extractedTime !== 'Not available' && (
-                                          <div>
-                                            <strong>Time:</strong> {activity.extractedTime}
-                                          </div>
-                                        )}
-                                        {(!activity.extractedDistance || activity.extractedDistance === 'Not available') && 
-                                         (!activity.extractedTime || activity.extractedTime === 'Not available') && (
-                                          <div className="text-gray-600">
-                                            Unable to extract time and distance from this link
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              <button
-                                onClick={() => removeActivity(activeDay, activity.id)}
-                                className="ml-4 p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
+                    <div className="space-y-4">
+                      {currentDay.activities.map((activity, activityIndex) => (
+                        <div key={activity.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-blue-800 flex items-center">
+                              <MapPin className="h-5 w-5 mr-2 text-gray-600" />
+                              <input
+                                type="text"
+                                value={activity.title}
+                                onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'title', e.target.value)}
+                                className="bg-transparent border-none outline-none text-blue-800 font-semibold"
+                                placeholder="Activity Title"
+                              />
+                            </h3>
+                            <button
+                              onClick={() => deleteActivity(currentDayIndex, activityIndex)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Minus className="h-5 w-5" />
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Accommodations Section */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-luxury-primary flex items-center">
-                          <Hotel className="h-5 w-5 mr-2" />
-                          Accommodations
-                        </h3>
-                        <button
-                          onClick={() => addAccommodation(activeDay)}
-                          className="btn-secondary text-sm"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Accommodation
-                        </button>
-                      </div>
-
-                      <div className="space-y-4">
-                        {days[activeDay].accommodations.map((accommodation) => (
-                          <div key={accommodation.id} className="bg-gray-50 rounded-xl p-4">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                              <textarea
+                                value={activity.description}
+                                onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'description', e.target.value)}
+                                className="w-full text-sm border border-gray-300 rounded px-3 py-2 resize-none"
+                                rows={3}
+                                placeholder="What will you do here?"
+                              />
+                            </div>
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                                 <input
                                   type="text"
-                                  placeholder="Accommodation name"
-                                  value={accommodation.name}
-                                  className="input-luxury"
+                                  value={activity.location}
+                                  onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'location', e.target.value)}
+                                  className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                  placeholder="Address or landmark"
                                 />
-                                <select
-                                  value={accommodation.type}
-                                  className="input-luxury"
-                                >
-                                  <option value="hotel">Hotel</option>
-                                  <option value="airbnb">Airbnb</option>
-                                  <option value="hostel">Hostel</option>
-                                  <option value="resort">Resort</option>
-                                </select>
                               </div>
-                              <button
-                                onClick={() => removeAccommodation(activeDay, accommodation.id)}
-                                className="ml-4 p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                                  <input
+                                    type="time"
+                                    value={activity.time}
+                                    onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'time', e.target.value)}
+                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost ($)</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={activity.cost}
+                                    onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'cost', parseInt(e.target.value) || 0)}
+                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
+                      
+                      {currentDay.activities.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-gray-600">No activities planned for this day yet.</p>
+                          <button
+                            onClick={() => addActivity(currentDayIndex)}
+                            className="btn-primary mt-4"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add First Activity
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

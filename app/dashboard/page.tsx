@@ -1,6 +1,7 @@
 "use client";
+
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, MapPin, DollarSign, Users, Search, Filter, Star } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Star, Search, Filter, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 interface SavedTrip {
@@ -23,100 +24,56 @@ interface SavedTrip {
   updatedAt: string;
 }
 
-// Mock data for the new structure (no longer used - using real data from localStorage)
-/*const sampleItineraries = [
-  {
-    id: '1',
-    name: 'European Adventure',
-    destination: 'Paris, France',
-    startDate: '2024-06-15',
-    endDate: '2024-06-22',
-    daysCount: 7,
-    travelers: 2,
-    budget: { total: 3500, currency: 'USD' },
-    status: 'confirmed',
-    image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    activitiesCount: 18,
-    completedActivities: 0,
-  },
-  {
-    id: '2',
-    name: 'Tokyo Discovery',
-    destination: 'Tokyo, Japan',
-    startDate: '2024-07-01',
-    endDate: '2024-07-10',
-    daysCount: 9,
-    travelers: 1,
-    budget: { total: 4200, currency: 'USD' },
-    status: 'planning',
-    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    activitiesCount: 24,
-    completedActivities: 0,
-  },
-  {
-    id: '3',
-    name: 'Bali Retreat',
-    destination: 'Bali, Indonesia',
-    startDate: '2024-04-10',
-    endDate: '2024-04-20',
-    daysCount: 10,
-    travelers: 2,
-    budget: { total: 2800, currency: 'USD' },
-    status: 'completed',
-    image: 'https://images.unsplash.com/photo-2537953773345-d172ccf13cf1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    activitiesCount: 15,
-    completedActivities: 15,
-  },
-];*/
-
 const Dashboard: React.FC = () => {
+  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
 
   useEffect(() => {
-    // Load saved trips from localStorage
-    const loadSavedTrips = () => {
-      const trips = localStorage.getItem('savedTrips');
-      if (trips) {
-        setSavedTrips(JSON.parse(trips));
-      }
-    };
-
     loadSavedTrips();
   }, []);
 
-  const filteredItineraries = savedTrips.filter(itinerary => {
-    const matchesSearch = itinerary.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         itinerary.destination.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || itinerary.status === filterStatus;
+  const loadSavedTrips = () => {
+    const saved = localStorage.getItem('savedTrips');
+    if (saved) {
+      try {
+        const trips = JSON.parse(saved);
+        setSavedTrips(trips);
+      } catch (error) {
+        console.error('Error loading saved trips:', error);
+        setSavedTrips([]);
+      }
+    }
+  };
+
+  const filteredItineraries = savedTrips.filter(trip => {
+    const matchesSearch = trip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         trip.destination.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'all' || trip.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
-  // Calculate stats from real data
-  const totalBudget = savedTrips.reduce((sum, trip) => sum + trip.budget.total, 0);
   const uniqueCountries = new Set(savedTrips.map(trip => trip.destination.split(',').pop()?.trim())).size;
-  const totalActivities = savedTrips.reduce((sum, trip) => sum + trip.activitiesCount, 0);
-  const completedActivities = savedTrips.reduce((sum, trip) => sum + trip.completedActivities, 0);
-  const avgRating = totalActivities > 0 ? (completedActivities / totalActivities * 5).toFixed(1) : '0.0';
+  const totalBudget = savedTrips.reduce((sum, trip) => sum + trip.budget.total, 0);
+  const avgRating = savedTrips.length > 0 ? Math.round((savedTrips.reduce((sum, trip) => sum + trip.completedActivities, 0) / savedTrips.length) * 10) / 10 : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
       case 'planning': return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-soft">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white-crisp border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-luxury-primary">Luxe Travel</h1>
+              <h1 className="text-2xl font-bold text-blue-800">Luxe Travel</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/ai-builder" className="btn-secondary">
@@ -133,11 +90,11 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="hero-gradient text-white-crisp">
+      <div className="hero-gradient text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Your Journey <span className="text-gold-warm">Awaits</span>
+              Your Journey <span className="text-yellow-300">Awaits</span>
             </h1>
             <p className="text-xl text-gray-100 mb-8 max-w-2xl mx-auto">
               Craft extraordinary travel experiences with our sophisticated itinerary management platform
@@ -152,7 +109,7 @@ const Dashboard: React.FC = () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-medium" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-600" />
               <input
                 type="text"
                 placeholder="Search itineraries..."
@@ -163,7 +120,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <Filter className="h-5 w-5 text-gray-medium" />
+                <Filter className="h-5 w-5 text-gray-600" />
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -183,23 +140,23 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <div className="card-luxury p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-navy-deep bg-opacity-10 rounded-xl">
-                <Calendar className="h-6 w-6 text-navy-deep" />
+              <div className="p-3 bg-blue-800 bg-opacity-10 rounded-xl">
+                <Calendar className="h-6 w-6 text-blue-800" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-gray-medium">Total Itineraries</p>
-                <p className="text-2xl font-bold text-luxury-primary">{savedTrips.length}</p>
+                <p className="text-sm text-gray-600">Total Itineraries</p>
+                <p className="text-2xl font-bold text-blue-800">{savedTrips.length}</p>
               </div>
             </div>
           </div>
           <div className="card-luxury p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-gold-warm bg-opacity-10 rounded-xl">
-                <MapPin className="h-6 w-6 text-gold-warm" />
+              <div className="p-3 bg-yellow-600 bg-opacity-10 rounded-xl">
+                <MapPin className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-gray-medium">Countries Visited</p>
-                <p className="text-2xl font-bold text-luxury-primary">{uniqueCountries}</p>
+                <p className="text-sm text-gray-600">Countries Visited</p>
+                <p className="text-2xl font-bold text-blue-800">{uniqueCountries}</p>
               </div>
             </div>
           </div>
@@ -209,8 +166,8 @@ const Dashboard: React.FC = () => {
                 <DollarSign className="h-6 w-6 text-green-500" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-gray-medium">Total Budget</p>
-                <p className="text-2xl font-bold text-luxury-primary">${totalBudget.toLocaleString()}</p>
+                <p className="text-sm text-gray-600">Total Budget</p>
+                <p className="text-2xl font-bold text-blue-800">${totalBudget.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -220,8 +177,8 @@ const Dashboard: React.FC = () => {
                 <Star className="h-6 w-6 text-purple-500" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-gray-medium">Completion Rate</p>
-                <p className="text-2xl font-bold text-luxury-primary">{avgRating}</p>
+                <p className="text-sm text-gray-600">Completion Rate</p>
+                <p className="text-2xl font-bold text-blue-800">{avgRating}</p>
               </div>
             </div>
           </div>
@@ -230,8 +187,8 @@ const Dashboard: React.FC = () => {
         {/* Itineraries Grid */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-luxury-primary">Your Itineraries</h2>
-            <div className="text-sm text-gray-medium">
+            <h2 className="text-2xl font-bold text-blue-800">Your Itineraries</h2>
+            <div className="text-sm text-gray-600">
               {filteredItineraries.length} of {savedTrips.length} itineraries
             </div>
           </div>
@@ -240,10 +197,10 @@ const Dashboard: React.FC = () => {
             <div className="text-center py-12">
               <div className="max-w-sm mx-auto">
                 <div className="mb-4">
-                  <Calendar className="h-12 w-12 text-gray-medium mx-auto" />
+                  <Calendar className="h-12 w-12 text-gray-600 mx-auto" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-dark mb-2">No itineraries found</h3>
-                <p className="text-gray-medium mb-6">
+                <h3 className="text-lg font-medium text-gray-700 mb-2">No itineraries found</h3>
+                <p className="text-gray-600 mb-6">
                   {searchTerm || filterStatus !== 'all' 
                     ? "Try adjusting your search or filter criteria" 
                     : "Start planning your first adventure"}
@@ -271,24 +228,24 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="p-6">
-                      <h3 className="text-lg font-bold text-luxury-primary mb-2">{itinerary.name}</h3>
-                      <p className="text-gray-medium mb-4">{itinerary.destination}</p>
+                      <h3 className="text-lg font-bold text-blue-800 mb-2">{itinerary.name}</h3>
+                      <p className="text-gray-600 mb-4">{itinerary.destination}</p>
                       
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 text-gray-medium mr-2" />
+                          <Calendar className="h-4 w-4 text-gray-600 mr-2" />
                           <span>{itinerary.daysCount} days</span>
                         </div>
                         <div className="flex items-center">
-                          <Users className="h-4 w-4 text-gray-medium mr-2" />
+                          <Users className="h-4 w-4 text-gray-600 mr-2" />
                           <span>{itinerary.travelers} travelers</span>
                         </div>
                         <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 text-gray-medium mr-2" />
+                          <DollarSign className="h-4 w-4 text-gray-600 mr-2" />
                           <span>${itinerary.budget.total.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center">
-                          <Star className="h-4 w-4 text-gray-medium mr-2" />
+                          <Star className="h-4 w-4 text-gray-600 mr-2" />
                           <span>{itinerary.completedActivities}/{itinerary.activitiesCount} done</span>
                         </div>
                       </div>

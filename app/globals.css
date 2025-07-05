@@ -48,6 +48,10 @@
     @apply text-yellow-600;
   }
   
+  .hover:shadow-luxury-hover {
+    @apply hover:shadow-lg;
+  }
+  
   .bg-luxury-gradient {
     background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
   }
