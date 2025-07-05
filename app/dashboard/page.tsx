@@ -1,10 +1,30 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, MapPin, DollarSign, Users, Search, Filter, Star } from 'lucide-react';
 import Link from 'next/link';
 
-// Mock data for the new structure
-const sampleItineraries = [
+interface SavedTrip {
+  id: string;
+  name: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  daysCount: number;
+  travelers: number;
+  budget: { total: number; currency: string };
+  status: 'planning' | 'confirmed' | 'completed';
+  image: string;
+  activitiesCount: number;
+  completedActivities: number;
+  tripDetails: any;
+  activities: any[];
+  overview: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Mock data for the new structure (no longer used - using real data from localStorage)
+/*const sampleItineraries = [
   {
     id: '1',
     name: 'European Adventure',
@@ -47,18 +67,38 @@ const sampleItineraries = [
     activitiesCount: 15,
     completedActivities: 15,
   },
-];
+];*/
 
 const Dashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
 
-  const filteredItineraries = sampleItineraries.filter(itinerary => {
+  useEffect(() => {
+    // Load saved trips from localStorage
+    const loadSavedTrips = () => {
+      const trips = localStorage.getItem('savedTrips');
+      if (trips) {
+        setSavedTrips(JSON.parse(trips));
+      }
+    };
+
+    loadSavedTrips();
+  }, []);
+
+  const filteredItineraries = savedTrips.filter(itinerary => {
     const matchesSearch = itinerary.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          itinerary.destination.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || itinerary.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  // Calculate stats from real data
+  const totalBudget = savedTrips.reduce((sum, trip) => sum + trip.budget.total, 0);
+  const uniqueCountries = new Set(savedTrips.map(trip => trip.destination.split(',').pop()?.trim())).size;
+  const totalActivities = savedTrips.reduce((sum, trip) => sum + trip.activitiesCount, 0);
+  const completedActivities = savedTrips.reduce((sum, trip) => sum + trip.completedActivities, 0);
+  const avgRating = totalActivities > 0 ? (completedActivities / totalActivities * 5).toFixed(1) : '0.0';
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -148,7 +188,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm text-gray-medium">Total Itineraries</p>
-                <p className="text-2xl font-bold text-luxury-primary">{sampleItineraries.length}</p>
+                <p className="text-2xl font-bold text-luxury-primary">{savedTrips.length}</p>
               </div>
             </div>
           </div>
@@ -159,7 +199,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm text-gray-medium">Countries Visited</p>
-                <p className="text-2xl font-bold text-luxury-primary">12</p>
+                <p className="text-2xl font-bold text-luxury-primary">{uniqueCountries}</p>
               </div>
             </div>
           </div>
@@ -170,7 +210,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm text-gray-medium">Total Budget</p>
-                <p className="text-2xl font-bold text-luxury-primary">$25,800</p>
+                <p className="text-2xl font-bold text-luxury-primary">${totalBudget.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -180,8 +220,8 @@ const Dashboard: React.FC = () => {
                 <Star className="h-6 w-6 text-purple-500" />
               </div>
               <div className="ml-4">
-                <p className="text-sm text-gray-medium">Avg Rating</p>
-                <p className="text-2xl font-bold text-luxury-primary">4.8</p>
+                <p className="text-sm text-gray-medium">Completion Rate</p>
+                <p className="text-2xl font-bold text-luxury-primary">{avgRating}</p>
               </div>
             </div>
           </div>
@@ -192,7 +232,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-luxury-primary">Your Itineraries</h2>
             <div className="text-sm text-gray-medium">
-              {filteredItineraries.length} of {sampleItineraries.length} itineraries
+              {filteredItineraries.length} of {savedTrips.length} itineraries
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save } from 'lucide-react';
 import { extractTimeAndDistance, isValidGoogleMapLink } from '../../lib/mapUtils';
 
 const ItineraryPage = () => {
@@ -13,6 +13,13 @@ const ItineraryPage = () => {
   const [activities, setActivities] = useState<any[]>([]);
   const [tripOverview, setTripOverview] = useState<string>('');
   const [addingActivity, setAddingActivity] = useState<number | null>(null);
+  const [editingOverview, setEditingOverview] = useState(false);
+  const [tempOverview, setTempOverview] = useState<string>('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [gettingAIAdvice, setGettingAIAdvice] = useState<number | null>(null);
+  const [tripName, setTripName] = useState<string>('');
+  const [tripImage, setTripImage] = useState<string>('');
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const [newActivity, setNewActivity] = useState({
     title: '',
     description: '',
@@ -42,11 +49,55 @@ const ItineraryPage = () => {
   }, []);
 
   const handleSave = () => {
-    // Save to 'myTrips' in localStorage (mock persistent store)
-    const myTrips = JSON.parse(localStorage.getItem('myTrips') || '[]');
-    myTrips.push({ ...tripDetails, itinerary, activities, tripOverview });
-    localStorage.setItem('myTrips', JSON.stringify(myTrips));
-    setSaved(true);
+    setShowSaveModal(true);
+  };
+
+  const handleSaveTrip = () => {
+    if (!tripName.trim()) {
+      alert('Please enter a trip name');
+      return;
+    }
+
+    const tripId = Date.now().toString();
+    const currentDate = new Date().toISOString();
+    
+    const savedTrip = {
+      id: tripId,
+      name: tripName,
+      destination: tripDetails?.destination || 'Unknown',
+      startDate: currentDate,
+      endDate: currentDate,
+      daysCount: tripDetails?.days || 7,
+      travelers: tripDetails?.people || 1,
+      budget: { 
+        total: activities.reduce((sum, activity) => sum + activity.cost, 0), 
+        currency: 'USD' 
+      },
+      status: 'planning' as const,
+      image: tripImage || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+      activitiesCount: activities.length,
+      completedActivities: 0,
+      tripDetails: tripDetails,
+      activities: activities,
+      overview: tripOverview,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    };
+
+    // Save to localStorage
+    const existingTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
+    existingTrips.push(savedTrip);
+    localStorage.setItem('savedTrips', JSON.stringify(existingTrips));
+
+    // Also save current itinerary
+    const updatedItinerary = generateItineraryFromActivities(activities);
+    setItinerary(updatedItinerary);
+    localStorage.setItem('itinerary', updatedItinerary);
+
+    setShowSaveModal(false);
+    setTripName('');
+    setTripImage('');
+    alert('Trip saved successfully!');
   };
 
   const handleActivityEdit = (activityId: number, field: string, value: string) => {
@@ -211,6 +262,109 @@ const ItineraryPage = () => {
       extractedDistance: '',
       extractedTime: ''
     });
+  };
+
+  const handleDeleteActivity = (activityId: number) => {
+    setActivities(prev => prev.filter(activity => activity.id !== activityId));
+    setShowDeleteConfirm(null);
+    
+    // Update localStorage
+    const updatedActivities = activities.filter(activity => activity.id !== activityId);
+    const updatedItinerary = generateItineraryFromActivities(updatedActivities);
+    setItinerary(updatedItinerary);
+    localStorage.setItem('itinerary', updatedItinerary);
+  };
+
+  const handleMoveActivity = (activityId: number, direction: 'left' | 'right') => {
+    const activity = activities.find(a => a.id === activityId);
+    if (!activity) return;
+
+    const newDay = direction === 'left' ? activity.day - 1 : activity.day + 1;
+    const totalDays = tripDetails?.days || 7;
+    
+    if (newDay < 1 || newDay > totalDays) return;
+
+    setActivities(prev => prev.map(a => 
+      a.id === activityId ? { ...a, day: newDay } : a
+    ));
+
+    // Update localStorage
+    const updatedActivities = activities.map(a => 
+      a.id === activityId ? { ...a, day: newDay } : a
+    );
+    const updatedItinerary = generateItineraryFromActivities(updatedActivities);
+    setItinerary(updatedItinerary);
+    localStorage.setItem('itinerary', updatedItinerary);
+  };
+
+  const handleEditOverview = () => {
+    setTempOverview(tripOverview);
+    setEditingOverview(true);
+  };
+
+  const handleSaveOverview = () => {
+    setTripOverview(tempOverview);
+    setEditingOverview(false);
+    
+    // Update localStorage
+    const updatedItinerary = generateItineraryFromActivities(activities);
+    setItinerary(updatedItinerary);
+    localStorage.setItem('itinerary', updatedItinerary);
+  };
+
+  const handleCancelOverviewEdit = () => {
+    setTempOverview('');
+    setEditingOverview(false);
+  };
+
+  const handleGetAIAdvice = async (activityId: number) => {
+    setGettingAIAdvice(activityId);
+    
+    try {
+      const activity = activities.find(a => a.id === activityId);
+      if (!activity) return;
+
+      const response = await fetch('/api/activity-advice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activity: activity,
+          destination: tripDetails?.destination,
+          travelStyle: tripDetails?.travelStyle,
+          groupType: tripDetails?.groupType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the activity with AI advice
+        setActivities(prev => prev.map(a => 
+          a.id === activityId 
+            ? { ...a, aiAdvice: data.advice, tips: activity.tips ? `${activity.tips}\n\nAI Recommendations:\n${data.advice}` : `AI Recommendations:\n${data.advice}` }
+            : a
+        ));
+
+        // Update localStorage
+        const updatedActivities = activities.map(a => 
+          a.id === activityId 
+            ? { ...a, aiAdvice: data.advice, tips: activity.tips ? `${activity.tips}\n\nAI Recommendations:\n${data.advice}` : `AI Recommendations:\n${data.advice}` }
+            : a
+        );
+        const updatedItinerary = generateItineraryFromActivities(updatedActivities);
+        setItinerary(updatedItinerary);
+        localStorage.setItem('itinerary', updatedItinerary);
+      } else {
+        alert('Failed to get AI advice. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error getting AI advice:', error);
+      alert('Failed to get AI advice. Please try again.');
+    } finally {
+      setGettingAIAdvice(null);
+    }
   };
 
   // Parse itinerary into structured data
@@ -520,20 +674,58 @@ const ItineraryPage = () => {
 
                      {/* About This Trip */}
            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
-             <h2 className="text-lg font-semibold text-gray-900 mb-4">About This Trip</h2>
-             <div className="text-gray-700 leading-relaxed">
-               {tripOverview ? (
-                 <p className="mb-4">{tripOverview}</p>
-               ) : (
-                 <p className="mb-4">
-                   {tripDetails.people} travelers exploring {tripDetails.destination} for {tripDetails.days} days. 
-                   Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
-                   Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
-                 </p>
+             <div className="flex items-center justify-between mb-4">
+               <h2 className="text-lg font-semibold text-gray-900">About This Trip</h2>
+               {!editingOverview && (
+                 <button
+                   onClick={handleEditOverview}
+                   className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded hover:bg-gray-200 transition-colors"
+                 >
+                   Edit
+                 </button>
                )}
-               <div className="text-sm text-gray-500 border-t pt-4">
-                 <strong>Trip Details:</strong> {tripDetails.people} travelers • {tripDetails.days} days • {tripDetails.travelStyle} style • {tripDetails.groupType} group • {tripDetails.activityLevel} activity level • Budget: {tripDetails.budget}
-               </div>
+             </div>
+             <div className="text-gray-700 leading-relaxed">
+               {editingOverview ? (
+                 <div className="space-y-4">
+                   <textarea
+                     value={tempOverview}
+                     onChange={(e) => setTempOverview(e.target.value)}
+                     placeholder="Describe your trip overview..."
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+                     rows={4}
+                   />
+                   <div className="flex items-center space-x-2">
+                     <button
+                       onClick={handleSaveOverview}
+                       className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                     >
+                       Save
+                     </button>
+                     <button
+                       onClick={handleCancelOverviewEdit}
+                       className="px-4 py-2 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors"
+                     >
+                       Cancel
+                     </button>
+                   </div>
+                 </div>
+               ) : (
+                 <>
+                   {tripOverview ? (
+                     <p className="mb-4">{tripOverview}</p>
+                   ) : (
+                     <p className="mb-4">
+                       {tripDetails.people} travelers exploring {tripDetails.destination} for {tripDetails.days} days. 
+                       Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
+                       Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
+                     </p>
+                   )}
+                   <div className="text-sm text-gray-500 border-t pt-4">
+                     <strong>Trip Details:</strong> {tripDetails.people} travelers • {tripDetails.days} days • {tripDetails.travelStyle} style • {tripDetails.groupType} group • {tripDetails.activityLevel} activity level • Budget: {tripDetails.budget}
+                   </div>
+                 </>
+               )}
              </div>
            </div>
 
@@ -627,12 +819,58 @@ const ItineraryPage = () => {
                                      </button>
                                    </>
                                  ) : (
-                                   <button
-                                     onClick={() => setEditingActivity(activity.id)}
-                                     className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200"
-                                   >
-                                     Edit
-                                   </button>
+                                   <>
+                                     {/* Move buttons */}
+                                     {activity.day > 1 && (
+                                       <button
+                                         onClick={() => handleMoveActivity(activity.id, 'left')}
+                                         className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                         title={`Move to Day ${activity.day - 1}`}
+                                       >
+                                         <ArrowLeft className="w-4 h-4" />
+                                       </button>
+                                     )}
+                                     {activity.day < (tripDetails?.days || 7) && (
+                                       <button
+                                         onClick={() => handleMoveActivity(activity.id, 'right')}
+                                         className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                         title={`Move to Day ${activity.day + 1}`}
+                                       >
+                                         <ArrowRight className="w-4 h-4" />
+                                       </button>
+                                     )}
+                                     
+                                     {/* AI Advice button */}
+                                     <button
+                                       onClick={() => handleGetAIAdvice(activity.id)}
+                                       disabled={gettingAIAdvice === activity.id}
+                                       className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded disabled:opacity-50"
+                                       title="Get AI advice for this activity"
+                                     >
+                                       {gettingAIAdvice === activity.id ? (
+                                         <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                                       ) : (
+                                         <Sparkles className="w-4 h-4" />
+                                       )}
+                                     </button>
+                                     
+                                     {/* Edit button */}
+                                     <button
+                                       onClick={() => setEditingActivity(activity.id)}
+                                       className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200"
+                                     >
+                                       Edit
+                                     </button>
+                                     
+                                     {/* Delete button */}
+                                     <button
+                                       onClick={() => setShowDeleteConfirm(activity.id)}
+                                       className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                                       title="Delete activity"
+                                     >
+                                       <Trash2 className="w-4 h-4" />
+                                     </button>
+                                   </>
                                  )}
                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(activity.type)}`}>
                                    {activity.type}
@@ -976,11 +1214,99 @@ const ItineraryPage = () => {
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
-              {saved ? 'Saved to My Trips!' : 'Save to My Trips'}
+              {saved ? 'Saved to Home Page!' : 'Save Trip to Home Page'}
             </button>
           </div>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Activity</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete this activity? This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteActivity(showDeleteConfirm)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Trip Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Save Trip</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trip Name</label>
+                <input
+                  type="text"
+                  value={tripName}
+                  onChange={(e) => setTripName(e.target.value)}
+                  placeholder="Enter a name for your trip"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trip Image URL (Optional)</label>
+                <input
+                  type="url"
+                  value={tripImage}
+                  onChange={(e) => setTripImage(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Provide a URL for your trip image, or leave blank for default
+                </p>
+              </div>
+              
+              {tripImage && (
+                <div className="mt-2">
+                  <img 
+                    src={tripImage} 
+                    alt="Trip preview" 
+                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                    onError={() => setTripImage('')}
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowSaveModal(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTrip}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Save Trip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
