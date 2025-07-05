@@ -383,8 +383,8 @@ const ItineraryDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+      {/* Mobile Header - Visible on Small Screens Only */}
+      <div className="block lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-4 relative z-40">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -396,7 +396,7 @@ const ItineraryDetailPage = () => {
           </div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors bg-gray-50 border border-gray-200"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -412,12 +412,60 @@ const ItineraryDetailPage = () => {
           />
         )}
 
-        {/* Sidebar */}
+        {/* Desktop Sidebar - Hidden on Mobile */}
+        <div className="hidden lg:flex lg:static lg:inset-y-0 lg:left-0 lg:z-auto lg:w-64 lg:bg-white lg:shadow-sm lg:border-r lg:border-gray-200 lg:flex-col">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Plane className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">TravelCraft</h1>
+                <p className="text-sm text-gray-500">Premium Itinerary Builder</p>
+              </div>
+            </div>
+          </div>
+          
+          <nav className="flex-1 p-4">
+            <div className="space-y-2">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h2>
+              <a 
+                href="/" 
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Plane className="w-4 h-4" />
+                <span>Home</span>
+              </a>
+              <button 
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors w-full text-left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back to Dashboard</span>
+              </button>
+              <a 
+                href="/my-trips" 
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Bookmark className="w-4 h-4" />
+                <span>My Itineraries</span>
+              </a>
+              <a 
+                href="/ai-builder" 
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Star className="w-4 h-4" />
+                <span>Create Itinerary</span>
+              </a>
+            </div>
+          </nav>
+        </div>
+
+        {/* Mobile Sidebar Overlay */}
         <div className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col
+          lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col
           transition-transform duration-300 ease-in-out
-          lg:static lg:translate-x-0 lg:z-auto lg:transition-none
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -481,7 +529,7 @@ const ItineraryDetailPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto w-full lg:ml-0">
+        <div className="flex-1 overflow-auto w-full">
           <div className="p-3 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
