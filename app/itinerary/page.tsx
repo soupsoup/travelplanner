@@ -318,7 +318,7 @@ const ItineraryPage = () => {
     if (!activity) return;
 
     const newDay = direction === 'left' ? activity.day - 1 : activity.day + 1;
-    const totalDays = tripDetails?.days || 7;
+    const totalDays = 7; // Fixed to prevent hydration mismatch
     
     if (newDay < 1 || newDay > totalDays) return;
 
@@ -614,7 +614,7 @@ const ItineraryPage = () => {
     );
   }
 
-  const days = Array.from({length: tripDetails.days || 7}, (_, i) => i + 1);
+  const days = Array.from({length: 7}, (_, i) => i + 1); // Fixed to prevent hydration mismatch
   const selectedDayActivities = sortActivitiesByTime(
     activities.filter(activity => activity.day === selectedDay)
   );
@@ -624,7 +624,7 @@ const ItineraryPage = () => {
     const calculateTravelSegments = async () => {
       const newSegments: Record<string, LocationDistance> = {};
       
-      for (let day = 1; day <= (tripDetails?.days || 7); day++) {
+      for (let day = 1; day <= 7; day++) { // Fixed to prevent hydration mismatch
         const dayActivities = sortActivitiesByTime(
           activities.filter(activity => activity.day === day)
         );
@@ -651,7 +651,7 @@ const ItineraryPage = () => {
     if (activities.length > 0) {
       calculateTravelSegments();
     }
-  }, [activities, tripDetails?.days]);
+  }, [activities, mounted]); // Fixed to prevent hydration mismatch
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -1105,7 +1105,7 @@ const ItineraryPage = () => {
                                          <ArrowLeft className="w-4 h-4" />
                                        </button>
                                      )}
-                                     {activity.day < (tripDetails?.days || 7) && (
+                                     {activity.day < 7 && (
                                        <button
                                          onClick={() => handleMoveActivity(activity.id, 'right')}
                                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
