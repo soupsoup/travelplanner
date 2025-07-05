@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link } from 'lucide-react';
+import { extractTimeAndDistance, isValidGoogleMapLink } from '../../lib/mapUtils';
 
 const ItineraryPage = () => {
   const [itinerary, setItinerary] = useState<string | null>(null);
@@ -20,7 +21,10 @@ const ItineraryPage = () => {
     cost: 0,
     type: 'activity',
     priority: 'medium',
-    tips: ''
+    tips: '',
+    googleMapLink: '',
+    extractedDistance: '',
+    extractedTime: ''
   });
 
   useEffect(() => {
@@ -51,6 +55,30 @@ const ItineraryPage = () => {
         ? { ...activity, [field]: field === 'cost' ? parseInt(value) || 0 : value }
         : activity
     ));
+  };
+
+  const handleActivityGoogleMapLinkEdit = (activityId: number, value: string) => {
+    setActivities(prev => prev.map(activity => 
+      activity.id === activityId 
+        ? { ...activity, googleMapLink: value }
+        : activity
+    ));
+    
+    // Extract time and distance if it's a valid Google Maps link
+    if (value && isValidGoogleMapLink(value)) {
+      const { distance, time } = extractTimeAndDistance(value);
+      setActivities(prev => prev.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, extractedDistance: distance, extractedTime: time }
+          : activity
+      ));
+    } else {
+      setActivities(prev => prev.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, extractedDistance: '', extractedTime: '' }
+          : activity
+      ));
+    }
   };
 
   const handleActivitySave = (activityId: number) => {
@@ -96,7 +124,10 @@ const ItineraryPage = () => {
       cost: 0,
       type: 'activity',
       priority: 'medium',
-      tips: ''
+      tips: '',
+      googleMapLink: '',
+      extractedDistance: '',
+      extractedTime: ''
     });
   };
 
@@ -105,6 +136,29 @@ const ItineraryPage = () => {
       ...prev,
       [field]: field === 'cost' ? (typeof value === 'string' ? parseInt(value) || 0 : value) : value
     }));
+  };
+
+  const handleGoogleMapLinkChange = (value: string) => {
+    setNewActivity(prev => ({
+      ...prev,
+      googleMapLink: value
+    }));
+    
+    // Extract time and distance if it's a valid Google Maps link
+    if (value && isValidGoogleMapLink(value)) {
+      const { distance, time } = extractTimeAndDistance(value);
+      setNewActivity(prev => ({
+        ...prev,
+        extractedDistance: distance,
+        extractedTime: time
+      }));
+    } else {
+      setNewActivity(prev => ({
+        ...prev,
+        extractedDistance: '',
+        extractedTime: ''
+      }));
+    }
   };
 
   const handleSaveNewActivity = () => {
@@ -135,7 +189,10 @@ const ItineraryPage = () => {
       cost: 0,
       type: 'activity',
       priority: 'medium',
-      tips: ''
+      tips: '',
+      googleMapLink: '',
+      extractedDistance: '',
+      extractedTime: ''
     });
   };
 
@@ -149,7 +206,10 @@ const ItineraryPage = () => {
       cost: 0,
       type: 'activity',
       priority: 'medium',
-      tips: ''
+      tips: '',
+      googleMapLink: '',
+      extractedDistance: '',
+      extractedTime: ''
     });
   };
 
@@ -652,6 +712,78 @@ const ItineraryPage = () => {
                                  )}
                                </div>
                              )}
+                             
+                             {/* Google Map Link field for transport activities */}
+                             {activity.type === 'transport' && (
+                               <div className="mt-4">
+                                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                                   <Link className="inline w-4 h-4 mr-1" />
+                                   Google Map Link
+                                 </label>
+                                 {isEditing ? (
+                                   <div>
+                                     <input
+                                       type="url"
+                                       value={activity.googleMapLink || ''}
+                                       onChange={(e) => handleActivityGoogleMapLinkEdit(activity.id, e.target.value)}
+                                       placeholder="Paste Google Maps link here to extract time and distance"
+                                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                     />
+                                     {activity.googleMapLink && (
+                                       <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                         {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
+                                           <div className="mb-1">
+                                             <strong>Distance:</strong> {activity.extractedDistance}
+                                           </div>
+                                         )}
+                                         {activity.extractedTime && activity.extractedTime !== 'Not available' && (
+                                           <div>
+                                             <strong>Time:</strong> {activity.extractedTime}
+                                           </div>
+                                         )}
+                                         {(!activity.extractedDistance || activity.extractedDistance === 'Not available') && 
+                                          (!activity.extractedTime || activity.extractedTime === 'Not available') && (
+                                           <div className="text-gray-600">
+                                             Unable to extract time and distance from this link
+                                           </div>
+                                         )}
+                                       </div>
+                                     )}
+                                   </div>
+                                 ) : (
+                                   <div>
+                                     {activity.googleMapLink ? (
+                                       <div>
+                                         <a
+                                           href={activity.googleMapLink}
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                                         >
+                                           {activity.googleMapLink}
+                                         </a>
+                                         {(activity.extractedDistance || activity.extractedTime) && (
+                                           <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                             {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
+                                               <div className="mb-1">
+                                                 <strong>Distance:</strong> {activity.extractedDistance}
+                                               </div>
+                                             )}
+                                             {activity.extractedTime && activity.extractedTime !== 'Not available' && (
+                                               <div>
+                                                 <strong>Time:</strong> {activity.extractedTime}
+                                               </div>
+                                             )}
+                                           </div>
+                                         )}
+                                       </div>
+                                     ) : (
+                                       <span className="text-gray-500 text-sm">No Google Map link added</span>
+                                     )}
+                                   </div>
+                                 )}
+                               </div>
+                             )}
                            </div>
                          </div>
                        );
@@ -751,6 +883,43 @@ const ItineraryPage = () => {
                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                          />
                        </div>
+                       
+                       {/* Google Map Link field for transport activities */}
+                       {newActivity.type === 'transport' && (
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">
+                             <Link className="inline w-4 h-4 mr-1" />
+                             Google Map Link
+                           </label>
+                           <input
+                             type="url"
+                             value={newActivity.googleMapLink}
+                             onChange={(e) => handleGoogleMapLinkChange(e.target.value)}
+                             placeholder="Paste Google Maps link here to extract time and distance"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           />
+                           {newActivity.googleMapLink && (
+                             <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                               {newActivity.extractedDistance && newActivity.extractedDistance !== 'Not available' && (
+                                 <div className="mb-1">
+                                   <strong>Distance:</strong> {newActivity.extractedDistance}
+                                 </div>
+                               )}
+                               {newActivity.extractedTime && newActivity.extractedTime !== 'Not available' && (
+                                 <div>
+                                   <strong>Time:</strong> {newActivity.extractedTime}
+                                 </div>
+                               )}
+                               {(!newActivity.extractedDistance || newActivity.extractedDistance === 'Not available') && 
+                                (!newActivity.extractedTime || newActivity.extractedTime === 'Not available') && (
+                                 <div className="text-gray-600">
+                                   Unable to extract time and distance from this link
+                                 </div>
+                               )}
+                             </div>
+                           )}
+                         </div>
+                       )}
                        
                        <div className="flex items-center justify-end space-x-3 pt-4 border-t border-blue-200">
                          <button

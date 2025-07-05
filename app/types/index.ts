@@ -56,6 +56,9 @@ export interface TransportationDetail {
   cost?: number;
   bookingReference?: string;
   notes?: string;
+  googleMapLink?: string;
+  extractedDistance?: string;
+  extractedTime?: string;
 }
 
 export interface Itinerary {
@@ -90,6 +93,9 @@ export interface Activity {
   rating?: number;
   notes?: string;
   photos?: string[];
+  googleMapLink?: string;
+  extractedDistance?: string;
+  extractedTime?: string;
 }
 
 export interface Accommodation {

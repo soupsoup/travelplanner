@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from 'react';
-import { Plus, X, Calendar, Activity, Hotel, Save } from 'lucide-react';
+import { Plus, X, Calendar, Activity, Hotel, Save, Link } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { extractTimeAndDistance, isValidGoogleMapLink } from '../../../lib/mapUtils';
 
 interface ActivityForm {
   id: string;
@@ -13,6 +14,9 @@ interface ActivityForm {
   category: string;
   cost: number;
   notes: string;
+  googleMapLink?: string;
+  extractedDistance?: string;
+  extractedTime?: string;
 }
 
 interface AccommodationForm {
@@ -118,6 +122,38 @@ const NewItinerary: React.FC = () => {
         ...updatedDays[dayIndex].activities[activityIndex],
         [field]: value,
       };
+      setDays(updatedDays);
+    }
+  };
+
+  const updateActivityGoogleMapLink = (dayIndex: number, activityId: string, value: string) => {
+    const updatedDays = [...days];
+    const activityIndex = updatedDays[dayIndex].activities.findIndex(
+      activity => activity.id === activityId
+    );
+    
+    if (activityIndex !== -1) {
+      updatedDays[dayIndex].activities[activityIndex] = {
+        ...updatedDays[dayIndex].activities[activityIndex],
+        googleMapLink: value,
+      };
+      
+      // Extract time and distance if it's a valid Google Maps link
+      if (value && isValidGoogleMapLink(value)) {
+        const { distance, time } = extractTimeAndDistance(value);
+        updatedDays[dayIndex].activities[activityIndex] = {
+          ...updatedDays[dayIndex].activities[activityIndex],
+          extractedDistance: distance,
+          extractedTime: time,
+        };
+      } else {
+        updatedDays[dayIndex].activities[activityIndex] = {
+          ...updatedDays[dayIndex].activities[activityIndex],
+          extractedDistance: '',
+          extractedTime: '',
+        };
+      }
+      
       setDays(updatedDays);
     }
   };
@@ -365,33 +401,112 @@ const NewItinerary: React.FC = () => {
                         {days[activeDay].activities.map((activity) => (
                           <div key={activity.id} className="bg-gray-50 rounded-xl p-4">
                             <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input
-                                  type="text"
-                                  placeholder="Activity title"
-                                  value={activity.title}
-                                  onChange={(e) => updateActivity(activeDay, activity.id, 'title', e.target.value)}
+                              <div className="flex-1 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <input
+                                    type="text"
+                                    placeholder="Activity title"
+                                    value={activity.title}
+                                    onChange={(e) => updateActivity(activeDay, activity.id, 'title', e.target.value)}
+                                    className="input-luxury"
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Location"
+                                    value={activity.location}
+                                    onChange={(e) => updateActivity(activeDay, activity.id, 'location', e.target.value)}
+                                    className="input-luxury"
+                                  />
+                                  <input
+                                    type="time"
+                                    value={activity.startTime}
+                                    onChange={(e) => updateActivity(activeDay, activity.id, 'startTime', e.target.value)}
+                                    className="input-luxury"
+                                  />
+                                  <input
+                                    type="time"
+                                    value={activity.endTime}
+                                    onChange={(e) => updateActivity(activeDay, activity.id, 'endTime', e.target.value)}
+                                    className="input-luxury"
+                                  />
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <select
+                                    value={activity.category}
+                                    onChange={(e) => updateActivity(activeDay, activity.id, 'category', e.target.value)}
+                                    className="input-luxury"
+                                  >
+                                    <option value="activity">Activity</option>
+                                    <option value="restaurant">Restaurant</option>
+                                    <option value="attraction">Attraction</option>
+                                    <option value="shopping">Shopping</option>
+                                    <option value="entertainment">Entertainment</option>
+                                    <option value="other">Transport</option>
+                                  </select>
+                                  <input
+                                    type="number"
+                                    placeholder="Cost ($)"
+                                    value={activity.cost}
+                                    onChange={(e) => updateActivity(activeDay, activity.id, 'cost', parseInt(e.target.value) || 0)}
+                                    className="input-luxury"
+                                    min="0"
+                                  />
+                                  <div></div>
+                                </div>
+                                
+                                <textarea
+                                  placeholder="Description"
+                                  value={activity.description}
+                                  onChange={(e) => updateActivity(activeDay, activity.id, 'description', e.target.value)}
                                   className="input-luxury"
+                                  rows={2}
                                 />
-                                <input
-                                  type="text"
-                                  placeholder="Location"
-                                  value={activity.location}
-                                  onChange={(e) => updateActivity(activeDay, activity.id, 'location', e.target.value)}
+                                
+                                <textarea
+                                  placeholder="Notes"
+                                  value={activity.notes}
+                                  onChange={(e) => updateActivity(activeDay, activity.id, 'notes', e.target.value)}
                                   className="input-luxury"
+                                  rows={2}
                                 />
-                                <input
-                                  type="time"
-                                  value={activity.startTime}
-                                  onChange={(e) => updateActivity(activeDay, activity.id, 'startTime', e.target.value)}
-                                  className="input-luxury"
-                                />
-                                <input
-                                  type="time"
-                                  value={activity.endTime}
-                                  onChange={(e) => updateActivity(activeDay, activity.id, 'endTime', e.target.value)}
-                                  className="input-luxury"
-                                />
+                                
+                                {/* Google Map Link field for transport activities */}
+                                {activity.category === 'other' && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      <Link className="inline w-4 h-4 mr-1" />
+                                      Google Map Link
+                                    </label>
+                                    <input
+                                      type="url"
+                                      placeholder="Paste Google Maps link here to extract time and distance"
+                                      value={activity.googleMapLink || ''}
+                                      onChange={(e) => updateActivityGoogleMapLink(activeDay, activity.id, e.target.value)}
+                                      className="input-luxury"
+                                    />
+                                    {activity.googleMapLink && (
+                                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                        {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
+                                          <div className="mb-1">
+                                            <strong>Distance:</strong> {activity.extractedDistance}
+                                          </div>
+                                        )}
+                                        {activity.extractedTime && activity.extractedTime !== 'Not available' && (
+                                          <div>
+                                            <strong>Time:</strong> {activity.extractedTime}
+                                          </div>
+                                        )}
+                                        {(!activity.extractedDistance || activity.extractedDistance === 'Not available') && 
+                                         (!activity.extractedTime || activity.extractedTime === 'Not available') && (
+                                          <div className="text-gray-600">
+                                            Unable to extract time and distance from this link
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <button
                                 onClick={() => removeActivity(activeDay, activity.id)}
