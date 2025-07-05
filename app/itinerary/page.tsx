@@ -11,6 +11,17 @@ const ItineraryPage = () => {
   const [editingActivity, setEditingActivity] = useState<number | null>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [tripOverview, setTripOverview] = useState<string>('');
+  const [addingActivity, setAddingActivity] = useState<number | null>(null);
+  const [newActivity, setNewActivity] = useState({
+    title: '',
+    description: '',
+    time: '',
+    location: '',
+    cost: 0,
+    type: 'activity',
+    priority: 'medium',
+    tips: ''
+  });
 
   useEffect(() => {
     // Read from localStorage (set by AI builder)
@@ -73,6 +84,73 @@ const ItineraryPage = () => {
     });
 
     return result;
+  };
+
+  const handleAddActivity = (day: number) => {
+    setAddingActivity(day);
+    setNewActivity({
+      title: '',
+      description: '',
+      time: getDefaultTime('activity'),
+      location: tripDetails?.destination || 'Destination',
+      cost: 0,
+      type: 'activity',
+      priority: 'medium',
+      tips: ''
+    });
+  };
+
+  const handleNewActivityChange = (field: string, value: string | number) => {
+    setNewActivity(prev => ({
+      ...prev,
+      [field]: field === 'cost' ? (typeof value === 'string' ? parseInt(value) || 0 : value) : value
+    }));
+  };
+
+  const handleSaveNewActivity = () => {
+    if (!newActivity.title.trim()) return;
+    
+    const nextId = Math.max(...activities.map(a => a.id), 0) + 1;
+    const activityToAdd = {
+      ...newActivity,
+      id: nextId,
+      day: addingActivity
+    };
+    
+    setActivities(prev => [...prev, activityToAdd]);
+    
+    // Update localStorage
+    const updatedActivities = [...activities, activityToAdd];
+    const updatedItinerary = generateItineraryFromActivities(updatedActivities);
+    setItinerary(updatedItinerary);
+    localStorage.setItem('itinerary', updatedItinerary);
+    
+    // Reset form
+    setAddingActivity(null);
+    setNewActivity({
+      title: '',
+      description: '',
+      time: '',
+      location: '',
+      cost: 0,
+      type: 'activity',
+      priority: 'medium',
+      tips: ''
+    });
+  };
+
+  const handleCancelNewActivity = () => {
+    setAddingActivity(null);
+    setNewActivity({
+      title: '',
+      description: '',
+      time: '',
+      location: '',
+      cost: 0,
+      type: 'activity',
+      priority: 'medium',
+      tips: ''
+    });
   };
 
   // Parse itinerary into structured data
@@ -578,11 +656,132 @@ const ItineraryPage = () => {
                          </div>
                        );
                      })
-                   ) : (
-                     <div className="text-center py-8">
-                       <p className="text-gray-500">No activities planned for Day {selectedDay}</p>
+                                    ) : (
+                   <div className="text-center py-8">
+                     <p className="text-gray-500">No activities planned for Day {selectedDay}</p>
+                   </div>
+                 )}
+                 
+                 {/* Add Activity Section */}
+                 {addingActivity === selectedDay ? (
+                   <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                     <h4 className="text-lg font-semibold text-gray-900 mb-4">Add New Activity to Day {selectedDay}</h4>
+                     <div className="space-y-4">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">Activity Title *</label>
+                           <input
+                             type="text"
+                             value={newActivity.title}
+                             onChange={(e) => handleNewActivityChange('title', e.target.value)}
+                             placeholder="e.g., Visit Local Museum"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           />
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                           <input
+                             type="text"
+                             value={newActivity.time}
+                             onChange={(e) => handleNewActivityChange('time', e.target.value)}
+                             placeholder="e.g., 10:00 AM - 12:00 PM"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           />
+                         </div>
+                       </div>
+                       
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                           <select
+                             value={newActivity.type}
+                             onChange={(e) => {
+                               handleNewActivityChange('type', e.target.value);
+                               // Auto-update time based on type
+                               handleNewActivityChange('time', getDefaultTime(e.target.value));
+                             }}
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           >
+                             <option value="activity">Activity</option>
+                             <option value="restaurant">Restaurant</option>
+                             <option value="accommodation">Accommodation</option>
+                             <option value="transport">Transport</option>
+                           </select>
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                           <input
+                             type="text"
+                             value={newActivity.location}
+                             onChange={(e) => handleNewActivityChange('location', e.target.value)}
+                             placeholder="Location"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           />
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-1">Cost ($)</label>
+                           <input
+                             type="number"
+                             value={newActivity.cost}
+                             onChange={(e) => handleNewActivityChange('cost', e.target.value)}
+                             min="0"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           />
+                         </div>
+                       </div>
+                       
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                         <textarea
+                           value={newActivity.description}
+                           onChange={(e) => handleNewActivityChange('description', e.target.value)}
+                           placeholder="Describe this activity..."
+                           rows={3}
+                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                         />
+                       </div>
+                       
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Tips & Recommendations</label>
+                         <textarea
+                           value={newActivity.tips}
+                           onChange={(e) => handleNewActivityChange('tips', e.target.value)}
+                           placeholder="Any tips or recommendations..."
+                           rows={2}
+                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                         />
+                       </div>
+                       
+                       <div className="flex items-center justify-end space-x-3 pt-4 border-t border-blue-200">
+                         <button
+                           onClick={handleCancelNewActivity}
+                           className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                         >
+                           Cancel
+                         </button>
+                         <button
+                           onClick={handleSaveNewActivity}
+                           disabled={!newActivity.title.trim()}
+                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                         >
+                           Add Activity
+                         </button>
+                       </div>
                      </div>
-                   )}
+                   </div>
+                 ) : (
+                   <div className="mt-6 text-center">
+                     <button
+                       onClick={() => handleAddActivity(selectedDay)}
+                       className="inline-flex items-center px-4 py-2 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                     >
+                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                       </svg>
+                       Add Activity to Day {selectedDay}
+                     </button>
+                   </div>
+                 )}
                  </div>
                ) : (
                  <div className="bg-gray-50 rounded-lg p-6">
