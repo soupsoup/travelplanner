@@ -250,15 +250,15 @@ const AIBuilder: React.FC = () => {
         return (
           <div className="space-y-8">
             <div className="text-center">
-              <MapPin className="h-12 w-12 text-gold-warm mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-luxury-primary mb-2">Tell us about your dream trip</h2>
-              <p className="text-gray-medium">The more details you share, the better we can personalize your itinerary</p>
+              <MapPin className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-blue-800 mb-2">Tell us about your dream trip</h2>
+              <p className="text-gray-600">The more details you share, the better we can personalize your itinerary</p>
             </div>
             
             <div className="max-w-4xl mx-auto space-y-6">
               {/* Destination Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Where would you like to go? *
                 </label>
                 <input
@@ -272,7 +272,7 @@ const AIBuilder: React.FC = () => {
 
               {/* Narrative Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Describe your ideal trip *
                 </label>
                 <textarea
@@ -282,14 +282,14 @@ const AIBuilder: React.FC = () => {
                   className="input-luxury w-full min-h-[120px] resize-vertical"
                   rows={6}
                 />
-                <p className="text-xs text-gray-medium mt-2">
+                <p className="text-xs text-gray-600 mt-2">
                   💡 Example: "I'm planning a romantic anniversary trip to Paris with my partner. We love art, fine dining, and exploring historic neighborhoods. We'd like a mix of iconic landmarks and hidden gems. Budget is flexible for special experiences. We prefer boutique hotels and enjoy both cultural activities and relaxing moments."
                 </p>
               </div>
 
               {/* Character count */}
               <div className="text-right">
-                <span className="text-xs text-gray-medium">
+                <span className="text-xs text-gray-600">
                   {formData.narrative.length} characters
                 </span>
               </div>
@@ -301,13 +301,13 @@ const AIBuilder: React.FC = () => {
         return (
           <div className="space-y-8">
             <div className="text-center">
-              <Calendar className="h-12 w-12 text-gold-warm mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-luxury-primary mb-2">Travel Details</h2>
-              <p className="text-gray-medium">When and with whom are you traveling?</p>
+              <Calendar className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-blue-800 mb-2">Travel Details</h2>
+              <p className="text-gray-600">When and with whom are you traveling?</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
               <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">Start Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
                 <input
                   type="date"
                   value={formData.startDate}
@@ -316,7 +316,7 @@ const AIBuilder: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">End Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
                 <input
                   type="date"
                   value={formData.endDate}
@@ -325,7 +325,7 @@ const AIBuilder: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">Number of Travelers</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Number of Travelers</label>
                 <input
                   type="number"
                   min="1"
@@ -339,7 +339,7 @@ const AIBuilder: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-dark mb-2">Budget (USD)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Budget (USD)</label>
                 <input
                   type="text"
                   placeholder="e.g., $3,000"
@@ -356,9 +356,9 @@ const AIBuilder: React.FC = () => {
         return (
           <div className="space-y-8">
             <div className="text-center">
-              <Heart className="h-12 w-12 text-gold-warm mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-luxury-primary mb-2">What interests you?</h2>
-              <p className="text-gray-medium">Select all that apply</p>
+              <Heart className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-blue-800 mb-2">What interests you?</h2>
+              <p className="text-gray-600">Select all that apply</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
               {interests.map((interest) => {
@@ -370,13 +370,13 @@ const AIBuilder: React.FC = () => {
                     onClick={() => handleInterestToggle(interest.id)}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                       isSelected 
-                        ? 'border-navy-deep bg-navy-deep bg-opacity-5' 
+                        ? 'border-blue-800 bg-blue-800 bg-opacity-5' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <div className="flex items-center">
-                      <Icon className={`h-6 w-6 mr-3 ${isSelected ? 'text-navy-deep' : 'text-gray-medium'}`} />
-                      <span className={`font-medium ${isSelected ? 'text-navy-deep' : 'text-gray-dark'}`}>
+                      <Icon className={`h-6 w-6 mr-3 ${isSelected ? 'text-blue-800' : 'text-gray-600'}`} />
+                      <span className={`font-medium ${isSelected ? 'text-blue-800' : 'text-gray-700'}`}>
                         {interest.label}
                       </span>
                     </div>
@@ -391,15 +391,15 @@ const AIBuilder: React.FC = () => {
         return (
           <div className="space-y-8">
             <div className="text-center">
-              <Sparkles className="h-12 w-12 text-gold-warm mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-luxury-primary mb-2">Your Travel Style</h2>
-              <p className="text-gray-medium">Help us customize your perfect trip</p>
+              <Sparkles className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-blue-800 mb-2">Your Travel Style</h2>
+              <p className="text-gray-600">Help us customize your perfect trip</p>
             </div>
             
             <div className="max-w-4xl mx-auto space-y-8">
               {/* Travel Style */}
               <div>
-                <h3 className="text-lg font-semibold text-luxury-primary mb-4">Travel Style</h3>
+                <h3 className="text-lg font-semibold text-blue-800 mb-4">Travel Style</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {travelStyles.map((style) => (
                     <div
@@ -407,14 +407,14 @@ const AIBuilder: React.FC = () => {
                       onClick={() => handleInputChange('travelStyle', style.id)}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                         formData.travelStyle === style.id
-                          ? 'border-navy-deep bg-navy-deep bg-opacity-5'
+                          ? 'border-blue-800 bg-blue-800 bg-opacity-5'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="text-center">
                         <div className="text-2xl mb-2">{style.price}</div>
-                        <h4 className="font-medium text-luxury-primary">{style.label}</h4>
-                        <p className="text-sm text-gray-medium mt-1">{style.description}</p>
+                        <h4 className="font-medium text-blue-800">{style.label}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{style.description}</p>
                       </div>
                     </div>
                   ))}
@@ -423,7 +423,7 @@ const AIBuilder: React.FC = () => {
 
               {/* Group Type */}
               <div>
-                <h3 className="text-lg font-semibold text-luxury-primary mb-4">Group Type</h3>
+                <h3 className="text-lg font-semibold text-blue-800 mb-4">Group Type</h3>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   {groupTypes.map((group) => (
                     <div
@@ -431,12 +431,12 @@ const AIBuilder: React.FC = () => {
                       onClick={() => handleInputChange('groupType', group.id)}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 text-center ${
                         formData.groupType === group.id
-                          ? 'border-navy-deep bg-navy-deep bg-opacity-5'
+                          ? 'border-blue-800 bg-blue-800 bg-opacity-5'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="text-2xl mb-2">{group.icon}</div>
-                      <span className="text-sm font-medium text-gray-dark">{group.label}</span>
+                      <span className="text-sm font-medium text-gray-700">{group.label}</span>
                     </div>
                   ))}
                 </div>
@@ -444,7 +444,7 @@ const AIBuilder: React.FC = () => {
 
               {/* Activity Level */}
               <div>
-                <h3 className="text-lg font-semibold text-luxury-primary mb-4">Activity Level</h3>
+                <h3 className="text-lg font-semibold text-blue-800 mb-4">Activity Level</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {activityLevels.map((level) => (
                     <div
@@ -452,12 +452,12 @@ const AIBuilder: React.FC = () => {
                       onClick={() => handleInputChange('activityLevel', level.id)}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                         formData.activityLevel === level.id
-                          ? 'border-navy-deep bg-navy-deep bg-opacity-5'
+                          ? 'border-blue-800 bg-blue-800 bg-opacity-5'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <h4 className="font-medium text-luxury-primary">{level.label}</h4>
-                      <p className="text-sm text-gray-medium mt-1">{level.description}</p>
+                      <h4 className="font-medium text-blue-800">{level.label}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{level.description}</p>
                     </div>
                   ))}
                 </div>
@@ -470,23 +470,23 @@ const AIBuilder: React.FC = () => {
         return (
           <div className="space-y-8">
             <div className="text-center">
-              <Sparkles className="h-12 w-12 text-gold-warm mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-luxury-primary mb-2">Ready to create magic?</h2>
-              <p className="text-gray-medium">Review your preferences and let AI craft your perfect itinerary</p>
+              <Sparkles className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-blue-800 mb-2">Ready to create magic?</h2>
+              <p className="text-gray-600">Review your preferences and let AI craft your perfect itinerary</p>
             </div>
             
             <div className="max-w-2xl mx-auto space-y-6">
               <div className="card-luxury p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-medium">Destination</span>
-                  <span className="font-medium text-luxury-primary">{formData.destination}</span>
+                  <span className="text-gray-600">Destination</span>
+                  <span className="font-medium text-blue-800">{formData.destination}</span>
                 </div>
                 
                 {/* Trip Vision/Narrative */}
                 <div className="pt-4 border-t border-gray-200">
-                  <span className="text-gray-medium text-sm">Your Trip Vision</span>
+                  <span className="text-gray-600 text-sm">Your Trip Vision</span>
                   <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-dark leading-relaxed">
+                    <p className="text-sm text-gray-700 leading-relaxed">
                       "{formData.narrative}"
                     </p>
                   </div>
@@ -494,40 +494,40 @@ const AIBuilder: React.FC = () => {
                 
                 <div className="pt-4 border-t border-gray-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-medium">Dates</span>
-                    <span className="font-medium text-luxury-primary">
+                    <span className="text-gray-600">Dates</span>
+                    <span className="font-medium text-blue-800">
                       {formData.startDate} to {formData.endDate}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-medium">Travelers</span>
-                    <span className="font-medium text-luxury-primary">{formData.travelers}</span>
+                    <span className="text-gray-600">Travelers</span>
+                    <span className="font-medium text-blue-800">{formData.travelers}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-medium">Budget</span>
-                    <span className="font-medium text-luxury-primary">{formData.budget}</span>
+                    <span className="text-gray-600">Budget</span>
+                    <span className="font-medium text-blue-800">{formData.budget}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-medium">Travel Style</span>
-                    <span className="font-medium text-luxury-primary">
+                    <span className="text-gray-600">Travel Style</span>
+                    <span className="font-medium text-blue-800">
                       {travelStyles.find(s => s.id === formData.travelStyle)?.label}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-medium">Group Type</span>
-                    <span className="font-medium text-luxury-primary">
+                    <span className="text-gray-600">Group Type</span>
+                    <span className="font-medium text-blue-800">
                       {groupTypes.find(g => g.id === formData.groupType)?.label}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-medium">Activity Level</span>
-                    <span className="font-medium text-luxury-primary">
+                    <span className="text-gray-600">Activity Level</span>
+                    <span className="font-medium text-blue-800">
                       {activityLevels.find(a => a.id === formData.activityLevel)?.label}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-medium">Interests</span>
-                    <span className="font-medium text-luxury-primary">
+                    <span className="text-gray-600">Interests</span>
+                    <span className="font-medium text-blue-800">
                       {formData.interests.length} selected
                     </span>
                   </div>
@@ -541,7 +541,7 @@ const AIBuilder: React.FC = () => {
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white-crisp mr-2"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Crafting your perfect itinerary...
                   </span>
                 ) : (
@@ -561,19 +561,19 @@ const AIBuilder: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-soft">
+    <div className="min-h-screen bg-gray-50">
       {/* Progress Bar */}
-      <div className="bg-white-crisp border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-bold text-luxury-primary">AI Trip Builder</h1>
+            <h1 className="text-xl font-bold text-blue-800">AI Trip Builder</h1>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-medium">
+              <span className="text-sm text-gray-600">
                 {currentStep + 1} of {steps.length}
               </span>
               <div className="w-32 bg-gray-200 rounded-full h-2">
                 <div 
-                  className="bg-gold-warm h-2 rounded-full transition-all duration-300"
+                  className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
                 ></div>
               </div>

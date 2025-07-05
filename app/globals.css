@@ -13,7 +13,7 @@
 
 @layer base {
   body {
-    @apply bg-gray-soft text-gray-dark;
+    @apply bg-gray-50 text-gray-700;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
   }
@@ -21,31 +21,31 @@
 
 @layer components {
   .card-luxury {
-    @apply bg-white-crisp rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300;
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300;
   }
   
   .btn-primary {
-    @apply bg-navy-deep hover:bg-opacity-90 text-white-crisp px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:shadow-md flex items-center;
+    @apply bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:shadow-md flex items-center;
   }
   
   .btn-secondary {
-    @apply bg-gold-warm hover:bg-opacity-90 text-white-crisp px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:shadow-md flex items-center;
+    @apply bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:shadow-md flex items-center;
   }
   
   .btn-outline {
-    @apply border border-navy-deep text-navy-deep hover:bg-navy-deep hover:text-white-crisp px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center;
+    @apply border border-blue-800 text-blue-800 hover:bg-blue-800 hover:text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center;
   }
   
   .input-luxury {
-    @apply bg-white-crisp border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-navy-deep focus:ring-2 focus:ring-navy-deep focus:ring-opacity-20 transition-all duration-200;
+    @apply bg-white border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-800 focus:ring-2 focus:ring-blue-800 focus:ring-opacity-20 transition-all duration-200;
   }
   
   .text-luxury-primary {
-    @apply text-navy-deep;
+    @apply text-blue-800;
   }
   
   .text-luxury-secondary {
-    @apply text-gold-warm;
+    @apply text-yellow-600;
   }
   
   .bg-luxury-gradient {
