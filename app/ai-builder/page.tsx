@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft, MapPin, Calendar, Users, DollarSign, Plane, Heart, Activity, Utensils, ShoppingBag, Mountain, Camera, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import ErrorBoundary from './ErrorBoundary';
 
 const steps = [
   { id: 'destination', title: 'Trip Vision', description: 'Tell us about your dream trip' },
@@ -60,7 +61,25 @@ const AIBuilder: React.FC = () => {
     notes: '',
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+
+  // Prevent SSR issues
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render until mounted to prevent SSR issues
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -97,6 +116,19 @@ const AIBuilder: React.FC = () => {
         return;
       }
 
+      console.log('Starting itinerary generation with data:', {
+        destination: formData.destination,
+        narrative: formData.narrative?.substring(0, 100) + '...',
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        travelers: formData.travelers,
+        budget: formData.budget,
+        interests: formData.interests,
+        travelStyle: formData.travelStyle,
+        groupType: formData.groupType,
+        activityLevel: formData.activityLevel,
+      });
+
       // Call the AI API to generate a real itinerary
       const response = await fetch('/api/generate-itinerary', {
         method: 'POST',
@@ -124,12 +156,17 @@ const AIBuilder: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Save the AI-generated itinerary to localStorage
-        localStorage.setItem('tripDetails', JSON.stringify(data.tripDetails));
-        localStorage.setItem('itinerary', data.itinerary);
-        
-        // Redirect to the itinerary page
-        router.push('/itinerary');
+        try {
+          // Save the AI-generated itinerary to localStorage
+          localStorage.setItem('tripDetails', JSON.stringify(data.tripDetails));
+          localStorage.setItem('itinerary', data.itinerary);
+          
+          // Redirect to the itinerary page
+          router.push('/itinerary');
+        } catch (storageError) {
+          console.error('Error saving to localStorage:', storageError);
+          alert('Generated itinerary successfully but failed to save. Please try again.');
+        }
       } else {
         console.error('Failed to generate itinerary:', data.error, data.details);
         
@@ -160,7 +197,26 @@ const AIBuilder: React.FC = () => {
       }
     } catch (error) {
       console.error('Error generating itinerary:', error);
-      alert('Network error occurred. Please check your internet connection and try again.');
+      console.error('Error type:', typeof error);
+      console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      let errorMessage = 'An error occurred while generating your itinerary. ';
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage += 'Please check your internet connection and try again.';
+        } else if (error.message.includes('JSON')) {
+          errorMessage += 'There was a problem processing the response. Please try again.';
+        } else if (error.message.includes('HTTP error')) {
+          errorMessage += 'Server error occurred. Please try again later.';
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += 'Please try again later.';
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -559,4 +615,12 @@ const AIBuilder: React.FC = () => {
   );
 };
 
-export default AIBuilder; 
+const AIBuilderWithErrorBoundary: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <AIBuilder />
+    </ErrorBoundary>
+  );
+};
+
+export default AIBuilderWithErrorBoundary; 
