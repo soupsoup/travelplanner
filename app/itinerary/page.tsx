@@ -250,9 +250,10 @@ const ItineraryPage = () => {
   };
 
   const handleSaveNewActivity = () => {
-    if (!newActivity.title.trim()) return;
+    if (!mounted || !newActivity.title.trim()) return;
     
-    const nextId = Math.max(...activities.map(a => a.id), 0) + 1;
+    // Generate deterministic ID to prevent hydration errors
+    const nextId = activities.length > 0 ? Math.max(...activities.map(a => a.id), 0) + 1 : 1000;
     const activityToAdd = {
       ...newActivity,
       id: nextId,
@@ -615,9 +616,9 @@ const ItineraryPage = () => {
   }
 
   const days = Array.from({length: 7}, (_, i) => i + 1); // Fixed to prevent hydration mismatch
-  const selectedDayActivities = sortActivitiesByTime(
+  const selectedDayActivities = mounted ? sortActivitiesByTime(
     activities.filter(activity => activity.day === selectedDay)
-  );
+  ) : [];
 
   // Calculate travel segments between consecutive activities
   useEffect(() => {
@@ -682,7 +683,7 @@ const ItineraryPage = () => {
     }
   };
 
-  const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0);
+  const totalCost = mounted ? activities.reduce((sum, activity) => sum + activity.cost, 0) : 0;
 
   const renderTravelSegment = (currentActivity: any, nextActivity: any) => {
     const segmentKey = `${currentActivity.id}-${nextActivity.id}`;
@@ -906,7 +907,7 @@ const ItineraryPage = () => {
                   <Calendar className="w-4 h-4 text-blue-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{tripDetails.days} days</div>
+                              <div className="text-2xl font-bold text-gray-900">{mounted && tripDetails ? `${tripDetails.days} days` : '7 days'}</div>
             </div>
             
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -916,7 +917,7 @@ const ItineraryPage = () => {
                   <MapPin className="w-4 h-4 text-green-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{activities.length}</div>
+              <div className="text-2xl font-bold text-gray-900">{mounted ? activities.length : 0}</div>
             </div>
             
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -926,7 +927,7 @@ const ItineraryPage = () => {
                   <DollarSign className="w-4 h-4 text-purple-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{tripDetails.budget}</div>
+              <div className="text-2xl font-bold text-gray-900">{mounted && tripDetails ? tripDetails.budget : 'Loading...'}</div>
             </div>
             
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -984,13 +985,23 @@ const ItineraryPage = () => {
                      <p className="mb-4">{tripOverview}</p>
                    ) : (
                      <p className="mb-4">
-                       {tripDetails.people} travelers exploring {tripDetails.destination} for {tripDetails.days} days. 
-                       Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
-                       Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
+                       {mounted && tripDetails ? (
+                         <>
+                           {tripDetails.people} travelers exploring {tripDetails.destination} for {tripDetails.days} days. 
+                           Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
+                           Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
+                         </>
+                       ) : (
+                         'Loading trip details...'
+                       )}
                      </p>
                    )}
                    <div className="text-sm text-gray-500 border-t pt-4">
-                     <strong>Trip Details:</strong> {tripDetails.people} travelers • {tripDetails.days} days • {tripDetails.travelStyle} style • {tripDetails.groupType} group • {tripDetails.activityLevel} activity level • Budget: {tripDetails.budget}
+                     <strong>Trip Details:</strong> {mounted && tripDetails ? (
+                       `${tripDetails.people} travelers • ${tripDetails.days} days • ${tripDetails.travelStyle} style • ${tripDetails.groupType} group • ${tripDetails.activityLevel} activity level • Budget: ${tripDetails.budget}`
+                     ) : (
+                       'Loading...'
+                     )}
                    </div>
                  </>
                )}
