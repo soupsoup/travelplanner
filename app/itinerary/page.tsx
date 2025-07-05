@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation } from 'lucide-react';
 import { extractTimeAndDistance, isValidGoogleMapLink } from '../../lib/mapUtils';
+import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../lib/timeUtils';
 
 const ItineraryPage = () => {
   const [itinerary, setItinerary] = useState<string | null>(null);
@@ -20,6 +21,7 @@ const ItineraryPage = () => {
   const [tripName, setTripName] = useState<string>('');
   const [tripImage, setTripImage] = useState<string>('');
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [travelSegments, setTravelSegments] = useState<Record<string, LocationDistance>>({});
   const [newActivity, setNewActivity] = useState({
     title: '',
     description: '',
@@ -562,7 +564,43 @@ const ItineraryPage = () => {
   }
 
   const days = Array.from({length: tripDetails.days || 7}, (_, i) => i + 1);
-  const selectedDayActivities = activities.filter(activity => activity.day === selectedDay);
+  const selectedDayActivities = sortActivitiesByTime(
+    activities.filter(activity => activity.day === selectedDay)
+  );
+
+  // Calculate travel segments between consecutive activities
+  useEffect(() => {
+    const calculateTravelSegments = async () => {
+      const newSegments: Record<string, LocationDistance> = {};
+      
+      for (let day = 1; day <= (tripDetails?.days || 7); day++) {
+        const dayActivities = sortActivitiesByTime(
+          activities.filter(activity => activity.day === day)
+        );
+        
+        for (let i = 0; i < dayActivities.length - 1; i++) {
+          const fromActivity = dayActivities[i];
+          const toActivity = dayActivities[i + 1];
+          const segmentKey = `${fromActivity.id}-${toActivity.id}`;
+          
+          // Only calculate if locations are different
+          if (fromActivity.location !== toActivity.location) {
+            const distance = estimateDistanceFromLocations(
+              fromActivity.location,
+              toActivity.location
+            );
+            newSegments[segmentKey] = distance;
+          }
+        }
+      }
+      
+      setTravelSegments(newSegments);
+    };
+
+    if (activities.length > 0) {
+      calculateTravelSegments();
+    }
+  }, [activities, tripDetails?.days]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -594,6 +632,39 @@ const ItineraryPage = () => {
   };
 
   const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0);
+
+  const renderTravelSegment = (currentActivity: any, nextActivity: any) => {
+    const segmentKey = `${currentActivity.id}-${nextActivity.id}`;
+    const travelInfo = travelSegments[segmentKey];
+    
+    if (!travelInfo || currentActivity.location === nextActivity.location) {
+      return null;
+    }
+
+    return (
+      <div key={`travel-${segmentKey}`} className="flex items-center justify-center py-4">
+        <div className="flex items-center space-x-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+          <Navigation className="w-4 h-4 text-blue-600" />
+          <div className="text-sm">
+            <span className="font-medium text-blue-800">
+              {travelInfo.distance} mi
+            </span>
+            <span className="text-blue-600 mx-2">•</span>
+            <span className="text-blue-700">
+              {formatDuration(travelInfo.duration)}
+            </span>
+            <span className="text-blue-600 mx-2">•</span>
+            <span className="text-blue-600 capitalize">
+              {travelInfo.mode}
+            </span>
+          </div>
+          <div className="text-xs text-blue-600">
+            to {nextActivity.location}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -733,7 +804,13 @@ const ItineraryPage = () => {
            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
              <div className="p-6 border-b border-gray-200">
                <div className="flex items-center justify-between mb-4">
-                 <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
+                 <div className="flex items-center space-x-3">
+                   <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
+                   <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
+                     <Clock className="w-3 h-3 text-green-600" />
+                     <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
+                   </div>
+                 </div>
                  <div className="flex items-center space-x-2">
                    <button
                      onClick={() => setViewMode('structured')}
@@ -781,11 +858,12 @@ const ItineraryPage = () => {
                {viewMode === 'structured' ? (
                  <div className="space-y-6">
                    {selectedDayActivities.length > 0 ? (
-                     selectedDayActivities.map((activity) => {
+                     selectedDayActivities.flatMap((activity, index) => {
                        const IconComponent = getActivityIcon(activity.type);
                        const isEditing = editingActivity === activity.id;
+                       const nextActivity = selectedDayActivities[index + 1];
                        
-                       return (
+                       const elements = [
                          <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
                            <div className="flex-shrink-0 w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-gray-200">
                              <IconComponent className="w-6 h-6 text-gray-600" />
@@ -1024,11 +1102,73 @@ const ItineraryPage = () => {
                              )}
                            </div>
                          </div>
-                       );
+                       ];
+
+                       // Add travel segment if there's a next activity
+                       if (nextActivity) {
+                         const travelSegment = renderTravelSegment(activity, nextActivity);
+                         if (travelSegment) {
+                           elements.push(travelSegment);
+                         }
+                       }
+
+                       return elements;
                      })
                                     ) : (
                    <div className="text-center py-8">
                      <p className="text-gray-500">No activities planned for Day {selectedDay}</p>
+                   </div>
+                 )}
+                 
+                 {/* Add Activity Section */}
+                 {/* Daily Travel Summary */}
+                 {selectedDayActivities.length > 1 && (
+                   <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                     <h4 className="text-sm font-semibold text-gray-900 mb-2">Day {selectedDay} Travel Summary</h4>
+                     <div className="flex items-center space-x-6 text-sm">
+                       {(() => {
+                         let totalDistance = 0;
+                         let totalDuration = 0;
+                         let segmentCount = 0;
+
+                         for (let i = 0; i < selectedDayActivities.length - 1; i++) {
+                           const fromActivity = selectedDayActivities[i];
+                           const toActivity = selectedDayActivities[i + 1];
+                           const segmentKey = `${fromActivity.id}-${toActivity.id}`;
+                           const travelInfo = travelSegments[segmentKey];
+                           
+                           if (travelInfo && fromActivity.location !== toActivity.location) {
+                             totalDistance += travelInfo.distance;
+                             totalDuration += travelInfo.duration;
+                             segmentCount++;
+                           }
+                         }
+
+                         if (segmentCount === 0) {
+                           return <span className="text-gray-500">All activities at same location</span>;
+                         }
+
+                         return (
+                           <>
+                             <div className="flex items-center space-x-1">
+                               <MapPin className="w-4 h-4 text-gray-600" />
+                               <span className="font-medium text-gray-700">
+                                 {totalDistance.toFixed(1)} mi total
+                               </span>
+                             </div>
+                             <div className="flex items-center space-x-1">
+                               <Clock className="w-4 h-4 text-gray-600" />
+                               <span className="text-gray-700">
+                                 {formatDuration(totalDuration)} travel time
+                               </span>
+                             </div>
+                             <div className="text-gray-500">
+                               {segmentCount} transfer{segmentCount !== 1 ? 's' : ''}
+                             </div>
+                           </>
+                         );
+                       })()}
+                     </div>
                    </div>
                  )}
                  
