@@ -208,7 +208,7 @@ const ItineraryPage = () => {
       title: '',
       description: '',
       time: getDefaultTime('activity'),
-      location: tripDetails?.destination || 'Destination',
+      location: 'Destination', // Fixed to prevent hydration mismatch
       cost: 0,
       type: 'activity',
       priority: 'medium',
@@ -466,7 +466,7 @@ const ItineraryPage = () => {
             title: cleanTitle,
             type: type,
             time: timeMatch ? formatTime(timeMatch[0]) : getDefaultTime(type),
-            location: tripDetails?.destination || 'Destination',
+            location: 'Destination', // Fixed to prevent hydration mismatch
             cost: estimatedCost,
             description: title,
             priority: determinePriority(type, trimmedLine),
@@ -569,7 +569,7 @@ const ItineraryPage = () => {
       title: "Arrival and Hotel Check-in",
       type: "accommodation",
       time: "3:00 PM - 4:00 PM",
-      location: tripDetails?.destination || 'Destination',
+      location: 'Destination', // Fixed to prevent hydration mismatch
       cost: 0,
       description: "Check into your chosen hotel in the city center. Consider options with convenient access to attractions.",
       priority: "high",
@@ -581,13 +581,24 @@ const ItineraryPage = () => {
       title: "Welcome Dinner",
       type: "restaurant",
       time: "7:00 PM - 9:00 PM",
-      location: tripDetails?.destination || 'Destination',
+      location: 'Destination', // Fixed to prevent hydration mismatch
       cost: generateEstimatedCost('restaurant', 2),
       description: "Enjoy a traditional local dining experience to kick off your adventure.",
       priority: "medium",
       tips: "Reservations recommended; check for availability and book in advance."
     }
   ];
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading itinerary...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!itinerary || !tripDetails) {
     return (
