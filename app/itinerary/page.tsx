@@ -8,6 +8,9 @@ const ItineraryPage = () => {
   const [saved, setSaved] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
   const [viewMode, setViewMode] = useState<'structured' | 'original'>('structured');
+  const [editingActivity, setEditingActivity] = useState<number | null>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [tripOverview, setTripOverview] = useState<string>('');
 
   useEffect(() => {
     // Read from localStorage (set by AI builder)
@@ -15,22 +18,76 @@ const ItineraryPage = () => {
     const tripData = localStorage.getItem('tripDetails');
     setItinerary(itineraryData);
     setTripDetails(tripData ? JSON.parse(tripData) : null);
+    
+    if (itineraryData) {
+      const { activities: parsedActivities, overview } = parseItinerary(itineraryData);
+      setActivities(parsedActivities);
+      setTripOverview(overview);
+    }
   }, []);
 
   const handleSave = () => {
     // Save to 'myTrips' in localStorage (mock persistent store)
     const myTrips = JSON.parse(localStorage.getItem('myTrips') || '[]');
-    myTrips.push({ ...tripDetails, itinerary });
+    myTrips.push({ ...tripDetails, itinerary, activities, tripOverview });
     localStorage.setItem('myTrips', JSON.stringify(myTrips));
     setSaved(true);
   };
 
+  const handleActivityEdit = (activityId: number, field: string, value: string) => {
+    setActivities(prev => prev.map(activity => 
+      activity.id === activityId 
+        ? { ...activity, [field]: field === 'cost' ? parseInt(value) || 0 : value }
+        : activity
+    ));
+  };
+
+  const handleActivitySave = (activityId: number) => {
+    setEditingActivity(null);
+    // Update localStorage with edited content
+    const updatedItinerary = generateItineraryFromActivities(activities);
+    setItinerary(updatedItinerary);
+    localStorage.setItem('itinerary', updatedItinerary);
+  };
+
+  const generateItineraryFromActivities = (activitiesList: any[]) => {
+    let result = tripOverview ? `Trip Overview:\n${tripOverview}\n\n` : '';
+    
+    const dayGroups = activitiesList.reduce((groups, activity) => {
+      const day = activity.day;
+      if (!groups[day]) groups[day] = [];
+      groups[day].push(activity);
+      return groups;
+    }, {} as Record<number, any[]>);
+
+    Object.keys(dayGroups).sort((a, b) => parseInt(a) - parseInt(b)).forEach(day => {
+      result += `**Day ${day}**\n`;
+      dayGroups[parseInt(day)].forEach(activity => {
+        result += `- **${activity.title}** (${activity.time})\n`;
+        result += `  ${activity.description}\n`;
+        if (activity.tips) {
+          result += `  Tip: ${activity.tips}\n`;
+        }
+        result += '\n';
+      });
+    });
+
+    return result;
+  };
+
   // Parse itinerary into structured data
   const parseItinerary = (text: string) => {
-    if (!text) return [];
+    if (!text) return { activities: [], overview: '' };
     
     const activities = [];
     let activityId = 1;
+    let overview = '';
+    
+    // Extract trip overview first
+    const overviewMatch = text.match(/trip overview[:\n](.+?)(?=day \d+|$)/i);
+    if (overviewMatch) {
+      overview = overviewMatch[1].trim();
+    }
     
     // Split by days
     const dayMatches = text.split(/(?=Day \d+|\*\*Day \d+)/i);
@@ -47,8 +104,9 @@ const ItineraryPage = () => {
         const trimmedLine = line.trim();
         if (!trimmedLine) return;
         
-        // Skip day headers
-        if (/^(\*\*)?Day \d+/i.test(trimmedLine)) return;
+        // Skip day headers and trip overview
+        if (/^(\*\*)?Day \d+/i.test(trimmedLine) || 
+            /trip overview/i.test(trimmedLine)) return;
         
         // Check for time patterns (morning, afternoon, evening, or specific times)
         const timePattern = /(morning|afternoon|evening|\d{1,2}:\d{2}|\d{1,2}\s?(am|pm))/i;
@@ -65,6 +123,9 @@ const ItineraryPage = () => {
           // Start new activity
           const title = trimmedLine.replace(/\*\*/g, '').replace(/^\*\s?/, '').replace(/^-\s?/, '').trim();
           const cleanTitle = title.split(':')[0].split('-')[0].trim();
+          
+          // Skip if this looks like trip overview
+          if (cleanTitle.toLowerCase().includes('trip overview')) return;
           
           const type = determineActivityType(cleanTitle, trimmedLine);
           const estimatedCost = extractCost(trimmedLine) || generateEstimatedCost(type);
@@ -100,10 +161,10 @@ const ItineraryPage = () => {
     
     // If no activities were parsed, create sample activities
     if (activities.length === 0) {
-      return createSampleActivities();
+      return { activities: createSampleActivities(), overview };
     }
     
-    return activities;
+    return { activities, overview };
   };
   
   const determineActivityType = (title: string, fullLine: string) => {
@@ -208,7 +269,6 @@ const ItineraryPage = () => {
     );
   }
 
-  const activities = parseItinerary(itinerary);
   const days = Array.from({length: tripDetails.days || 7}, (_, i) => i + 1);
   const selectedDayActivities = activities.filter(activity => activity.day === selectedDay);
 
@@ -320,15 +380,24 @@ const ItineraryPage = () => {
             </div>
           </div>
 
-          {/* About This Trip */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">About This Trip</h2>
-            <p className="text-gray-700 leading-relaxed">
-              {tripDetails.people} travelers exploring {tripDetails.destination} for {tripDetails.days} days. 
-              Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
-              Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
-            </p>
-          </div>
+                     {/* About This Trip */}
+           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
+             <h2 className="text-lg font-semibold text-gray-900 mb-4">About This Trip</h2>
+             <div className="text-gray-700 leading-relaxed">
+               {tripOverview ? (
+                 <p className="mb-4">{tripOverview}</p>
+               ) : (
+                 <p className="mb-4">
+                   {tripDetails.people} travelers exploring {tripDetails.destination} for {tripDetails.days} days. 
+                   Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
+                   Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
+                 </p>
+               )}
+               <div className="text-sm text-gray-500 border-t pt-4">
+                 <strong>Trip Details:</strong> {tripDetails.people} travelers • {tripDetails.days} days • {tripDetails.travelStyle} style • {tripDetails.groupType} group • {tripDetails.activityLevel} activity level • Budget: {tripDetails.budget}
+               </div>
+             </div>
+           </div>
 
                      {/* Daily Timeline */}
            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -384,6 +453,8 @@ const ItineraryPage = () => {
                    {selectedDayActivities.length > 0 ? (
                      selectedDayActivities.map((activity) => {
                        const IconComponent = getActivityIcon(activity.type);
+                       const isEditing = editingActivity === activity.id;
+                       
                        return (
                          <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
                            <div className="flex-shrink-0 w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-gray-200">
@@ -391,8 +462,40 @@ const ItineraryPage = () => {
                            </div>
                            <div className="flex-1 min-w-0">
                              <div className="flex items-center justify-between mb-2">
-                               <h3 className="text-lg font-semibold text-gray-900">{activity.title}</h3>
+                               {isEditing ? (
+                                 <input
+                                   type="text"
+                                   value={activity.title}
+                                   onChange={(e) => handleActivityEdit(activity.id, 'title', e.target.value)}
+                                   className="text-lg font-semibold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 flex-1 mr-2"
+                                 />
+                               ) : (
+                                 <h3 className="text-lg font-semibold text-gray-900">{activity.title}</h3>
+                               )}
                                <div className="flex items-center space-x-2">
+                                 {isEditing ? (
+                                   <>
+                                     <button
+                                       onClick={() => handleActivitySave(activity.id)}
+                                       className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                                     >
+                                       Save
+                                     </button>
+                                     <button
+                                       onClick={() => setEditingActivity(null)}
+                                       className="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400"
+                                     >
+                                       Cancel
+                                     </button>
+                                   </>
+                                 ) : (
+                                   <button
+                                     onClick={() => setEditingActivity(activity.id)}
+                                     className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200"
+                                   >
+                                     Edit
+                                   </button>
+                                 )}
                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(activity.type)}`}>
                                    {activity.type}
                                  </span>
@@ -401,26 +504,74 @@ const ItineraryPage = () => {
                                  </span>
                                </div>
                              </div>
-                             <p className="text-gray-700 mb-3">{activity.description}</p>
+                             
+                             {isEditing ? (
+                               <textarea
+                                 value={activity.description}
+                                 onChange={(e) => handleActivityEdit(activity.id, 'description', e.target.value)}
+                                 className="w-full text-gray-700 bg-white border border-gray-300 rounded px-3 py-2 mb-3 min-h-[60px]"
+                                 rows={3}
+                               />
+                             ) : (
+                               <p className="text-gray-700 mb-3">{activity.description}</p>
+                             )}
+                             
                              <div className="flex items-center space-x-6 text-sm text-gray-500 mb-3">
                                <div className="flex items-center space-x-1">
                                  <Clock className="w-4 h-4" />
-                                 <span>{activity.time}</span>
+                                 {isEditing ? (
+                                   <input
+                                     type="text"
+                                     value={activity.time}
+                                     onChange={(e) => handleActivityEdit(activity.id, 'time', e.target.value)}
+                                     className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
+                                   />
+                                 ) : (
+                                   <span>{activity.time}</span>
+                                 )}
                                </div>
                                <div className="flex items-center space-x-1">
                                  <MapPin className="w-4 h-4" />
-                                 <span>{activity.location}</span>
+                                 {isEditing ? (
+                                   <input
+                                     type="text"
+                                     value={activity.location}
+                                     onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
+                                     className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
+                                   />
+                                 ) : (
+                                   <span>{activity.location}</span>
+                                 )}
                                </div>
-                               {activity.cost > 0 && (
-                                 <div className="flex items-center space-x-1">
-                                   <DollarSign className="w-4 h-4" />
+                               <div className="flex items-center space-x-1">
+                                 <DollarSign className="w-4 h-4" />
+                                 {isEditing ? (
+                                   <input
+                                     type="number"
+                                     value={activity.cost}
+                                     onChange={(e) => handleActivityEdit(activity.id, 'cost', e.target.value)}
+                                     className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-20"
+                                     min="0"
+                                   />
+                                 ) : (
                                    <span>${activity.cost}</span>
-                                 </div>
-                               )}
+                                 )}
+                               </div>
                              </div>
-                             {activity.tips && (
+                             
+                             {(activity.tips || isEditing) && (
                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                 <p className="text-sm text-blue-800">{activity.tips}</p>
+                                 {isEditing ? (
+                                   <textarea
+                                     value={activity.tips}
+                                     onChange={(e) => handleActivityEdit(activity.id, 'tips', e.target.value)}
+                                     placeholder="Add tips or recommendations..."
+                                     className="w-full text-sm text-blue-800 bg-transparent border-none resize-none focus:outline-none"
+                                     rows={2}
+                                   />
+                                 ) : (
+                                   <p className="text-sm text-blue-800">{activity.tips}</p>
+                                 )}
                                </div>
                              )}
                            </div>
