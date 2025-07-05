@@ -414,15 +414,10 @@ const ItineraryDetailPage = () => {
 
         {/* Sidebar */}
         <div className={`
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0
-          fixed lg:static
-          inset-y-0 left-0
-          z-50 lg:z-auto
-          w-64 bg-white shadow-sm border-r border-gray-200
-          flex flex-col
+          fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col
           transition-transform duration-300 ease-in-out
-          lg:transition-none
+          lg:static lg:translate-x-0 lg:z-auto lg:transition-none
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -486,7 +481,7 @@ const ItineraryDetailPage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto lg:ml-0">
+        <div className="flex-1 overflow-auto w-full lg:ml-0">
           <div className="p-3 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
