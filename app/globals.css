@@ -70,5 +70,52 @@
     .touch-target {
       @apply min-h-[48px] min-w-[48px];
     }
+    
+    /* Improved button spacing for mobile */
+    .touch-target.px-3 {
+      @apply px-4;
+    }
+    
+    .touch-target.py-2 {
+      @apply py-3;
+    }
+    
+    /* Better text sizing for mobile */
+    .touch-target .text-sm {
+      @apply text-base;
+    }
+    
+    /* Improved input field sizing */
+    input.touch-target,
+    textarea.touch-target,
+    select.touch-target {
+      @apply py-3 text-base;
+    }
+  }
+  
+  /* Improved scrollbar styling for mobile */
+  @media (max-width: 768px) {
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 2px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 2px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
   }
 } 

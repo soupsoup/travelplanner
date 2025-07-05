@@ -1388,140 +1388,133 @@ const ItineraryPage = () => {
 
         {/* Main Content */}
         <div className="flex-1 overflow-auto lg:ml-0">
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-3 sm:p-6 lg:p-8">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Duration</span>
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Calendar className="w-4 h-4 text-blue-600" />
                 </div>
               </div>
-                              <div className="text-2xl font-bold text-gray-900">{mounted ? `${totalDays} days` : '7 days'}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{mounted ? `${totalDays} days` : '7 days'}</div>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Activities</span>
                 <div className="p-2 bg-green-100 rounded-lg">
                   <MapPin className="w-4 h-4 text-green-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{mounted ? activities.length : 0}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{mounted ? activities.length : 0}</div>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Budget</span>
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <DollarSign className="w-4 h-4 text-purple-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{mounted && tripDetails ? tripDetails.budget : 'Loading...'}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{mounted && tripDetails ? tripDetails.budget : 'Loading...'}</div>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">Estimated Cost</span>
                 <div className="p-2 bg-yellow-100 rounded-lg">
                   <DollarSign className="w-4 h-4 text-yellow-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900">${totalCost.toLocaleString()}</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">${totalCost.toLocaleString()}</div>
             </div>
           </div>
 
-                     {/* About This Trip */}
-           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
-             <div className="flex items-center justify-between mb-4">
-               <h2 className="text-lg font-semibold text-gray-900">About This Trip</h2>
-               {!editingOverview && (
-                 <button
-                   onClick={handleEditOverview}
-                   className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded hover:bg-gray-200 transition-colors"
-                 >
-                   Edit
-                 </button>
-               )}
-             </div>
-             <div className="text-gray-700 leading-relaxed">
-               {editingOverview ? (
-                 <div className="space-y-4">
-                   <textarea
-                     value={tempOverview}
-                     onChange={(e) => setTempOverview(e.target.value)}
-                     placeholder="Describe your trip overview..."
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
-                     rows={4}
-                   />
-                   <div className="flex items-center space-x-2">
-                     <button
-                       onClick={handleSaveOverview}
-                       className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                     >
-                       Save
-                     </button>
-                     <button
-                       onClick={handleCancelOverviewEdit}
-                       className="px-4 py-2 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors"
-                     >
-                       Cancel
-                     </button>
-                   </div>
-                 </div>
-               ) : (
-                 <>
-                   {tripOverview ? (
-                     <p className="mb-4">{tripOverview}</p>
-                   ) : (
-                     <p className="mb-4">
-                       {mounted && tripDetails ? (
-                         <>
-                           {tripDetails.people} travelers exploring {tripDetails.destination} for {totalDays} days. 
-                           Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
-                           Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
-                         </>
-                       ) : (
-                         'Loading trip details...'
-                       )}
-                     </p>
-                   )}
-                   <div className="text-sm text-gray-500 border-t pt-4">
-                     <strong>Trip Details:</strong> {mounted && tripDetails ? (
-                       `${tripDetails.people} travelers • ${totalDays} days • ${tripDetails.travelStyle} style • ${tripDetails.groupType} group • ${tripDetails.activityLevel} activity level • Budget: ${tripDetails.budget}`
-                     ) : (
-                       'Loading...'
-                     )}
-                   </div>
-                 </>
-               )}
-             </div>
-           </div>
-
-                               {/* Daily Timeline */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
-                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
-                    <Clock className="w-3 h-3 text-green-600" />
-                    <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
+          {/* About This Trip */}
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-6 sm:mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">About This Trip</h2>
+              {!editingOverview && (
+                <button
+                  onClick={handleEditOverview}
+                  className="px-3 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200 transition-colors touch-target"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            <div className="text-gray-700 leading-relaxed">
+              {editingOverview ? (
+                <div className="space-y-4">
+                  <textarea
+                    value={tempOverview}
+                    onChange={(e) => setTempOverview(e.target.value)}
+                    placeholder="Describe your trip overview..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical touch-target"
+                    rows={4}
+                  />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={handleSaveOverview}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors touch-target"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancelOverviewEdit}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors touch-target"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                  <button
-                    onClick={handleGoogleDocsImport}
-                    className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm w-full sm:w-auto justify-center sm:justify-start"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Import from Google Docs
-                  </button>
+              ) : (
+                <>
+                  {tripOverview ? (
+                    <p className="mb-4">{tripOverview}</p>
+                  ) : (
+                    <p className="mb-4">
+                      {mounted && tripDetails ? (
+                        <>
+                          {tripDetails.people} travelers exploring {tripDetails.destination} for {totalDays} days. 
+                          Travel style: {tripDetails.travelStyle}, Group: {tripDetails.groupType}, Activity level: {tripDetails.activityLevel}.
+                          Interests: {tripDetails.interests}. Budget: {tripDetails.budget}.
+                        </>
+                      ) : (
+                        'Loading trip details...'
+                      )}
+                    </p>
+                  )}
+                  <div className="text-sm text-gray-500 border-t pt-4">
+                    <strong>Trip Details:</strong> {mounted && tripDetails ? (
+                      `${tripDetails.people} travelers • ${totalDays} days • ${tripDetails.travelStyle} style • ${tripDetails.groupType} group • ${tripDetails.activityLevel} activity level • Budget: ${tripDetails.budget}`
+                    ) : (
+                      'Loading...'
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Daily Timeline */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
+                    <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
+                      <Clock className="w-3 h-3 text-green-600" />
+                      <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
+                    </div>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => setViewMode('structured')}
-                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-target ${
                         viewMode === 'structured'
                           ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-500 hover:text-gray-700'
@@ -1531,7 +1524,7 @@ const ItineraryPage = () => {
                     </button>
                     <button
                       onClick={() => setViewMode('original')}
-                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-target ${
                         viewMode === 'original'
                           ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-500 hover:text-gray-700'
@@ -1541,347 +1534,388 @@ const ItineraryPage = () => {
                     </button>
                   </div>
                 </div>
+                
+                <div className="flex flex-col space-y-3">
+                  <button
+                    onClick={handleGoogleDocsImport}
+                    className="inline-flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium touch-target"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Import from Google Docs
+                  </button>
+                </div>
               </div>
-               {viewMode === 'structured' && (
-                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                   <div className="flex flex-wrap gap-2 overflow-x-auto w-full sm:w-auto">
-                     {days.map(day => (
-                       <button
-                         key={day}
-                         onClick={() => setSelectedDay(day)}
-                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-                           selectedDay === day
-                             ? 'bg-blue-600 text-white'
-                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                         }`}
-                       >
-                         Day {day}
-                       </button>
-                     ))}
-                   </div>
-                   <div className="flex items-center gap-1 sm:ml-4">
-                     <button
-                       onClick={handleAddDay}
-                       className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                       title="Add Day"
-                     >
-                       <Plus className="w-4 h-4" />
-                     </button>
-                     {totalDays > 1 && (
-                       <button
-                         onClick={handleRemoveDay}
-                         className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                         title="Remove Last Day"
-                       >
-                         <Trash2 className="w-4 h-4" />
-                       </button>
-                     )}
-                   </div>
-                 </div>
-               )}
-             </div>
+              
+              {viewMode === 'structured' && (
+                <div className="mt-6 space-y-4">
+                  {/* Day Navigation - Mobile Optimized */}
+                  <div className="overflow-x-auto">
+                    <div className="flex space-x-2 pb-2 min-w-max">
+                      {days.map(day => (
+                        <button
+                          key={day}
+                          onClick={() => setSelectedDay(day)}
+                          className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors touch-target flex-shrink-0 ${
+                            selectedDay === day
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          Day {day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Add/Remove Day Controls */}
+                  <div className="flex items-center justify-center space-x-3 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={handleAddDay}
+                      className="flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors touch-target"
+                      title="Add Day"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium">Add Day</span>
+                    </button>
+                    {totalDays > 1 && (
+                      <button
+                        onClick={handleRemoveDay}
+                        className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors touch-target"
+                        title="Remove Last Day"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="text-sm font-medium">Remove Day</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
-                         {/* Activities */}
-             <div className="p-6">
-               {viewMode === 'structured' ? (
-                 <div className="space-y-6">
-                   {selectedDayActivities.length > 0 ? (
-                     selectedDayActivities.flatMap((activity, index) => {
-                       const IconComponent = getActivityIcon(activity.type);
-                       const isEditing = editingActivity === activity.id;
-                       const nextActivity = selectedDayActivities[index + 1];
-                       
-                       const elements = [
-                         <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                           <div className="flex-shrink-0 w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-gray-200">
-                             <IconComponent className="w-6 h-6 text-gray-600" />
-                           </div>
-                           <div className="flex-1 min-w-0">
-                             <div className="flex items-center justify-between mb-2">
-                               {isEditing ? (
-                                 <input
-                                   type="text"
-                                   value={activity.title}
-                                   onChange={(e) => handleActivityEdit(activity.id, 'title', e.target.value)}
-                                   className="text-lg font-semibold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 flex-1 mr-2"
-                                 />
-                               ) : (
-                                 <h3 className="text-lg font-semibold text-gray-900">{activity.title}</h3>
-                               )}
-                               <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                                 {isEditing ? (
-                                   <div className="flex items-center space-x-2">
-                                     <button
-                                       onClick={() => handleActivitySave(activity.id)}
-                                       className="px-3 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 touch-target"
-                                     >
-                                       Save
-                                     </button>
-                                     <button
-                                       onClick={() => setEditingActivity(null)}
-                                       className="px-3 py-2 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 touch-target"
-                                     >
-                                       Cancel
-                                     </button>
-                                   </div>
-                                 ) : (
-                                   <div className="flex flex-wrap items-center gap-2">
-                                     {/* Move buttons */}
-                                     {activity.day > 1 && (
-                                       <button
-                                         onClick={() => handleMoveActivity(activity.id, 'left')}
-                                         className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded touch-target"
-                                         title={`Move to Day ${activity.day - 1}`}
-                                       >
-                                         <ArrowLeft className="w-4 h-4" />
-                                       </button>
-                                     )}
-                                     {activity.day < totalDays && (
-                                       <button
-                                         onClick={() => handleMoveActivity(activity.id, 'right')}
-                                         className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded touch-target"
-                                         title={`Move to Day ${activity.day + 1}`}
-                                       >
-                                         <ArrowRight className="w-4 h-4" />
-                                       </button>
-                                     )}
-                                     
-                                     {/* AI Advice button */}
-                                     <button
-                                       onClick={() => handleGetAIAdvice(activity.id)}
-                                       disabled={gettingAIAdvice === activity.id}
-                                       className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded disabled:opacity-50 touch-target"
-                                       title="Get AI advice for this activity"
-                                     >
-                                       {gettingAIAdvice === activity.id ? (
-                                         <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
-                                       ) : (
-                                         <Sparkles className="w-4 h-4" />
-                                       )}
-                                     </button>
-                                     
-                                     {/* Edit button */}
-                                     <button
-                                       onClick={() => setEditingActivity(activity.id)}
-                                       className="px-3 py-2 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200 touch-target"
-                                     >
-                                       Edit
-                                     </button>
-                                     
-                                     {/* Delete button */}
-                                     <button
-                                       onClick={() => setShowDeleteConfirm(activity.id)}
-                                       className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded touch-target"
-                                       title="Delete activity"
-                                     >
-                                       <Trash2 className="w-4 h-4" />
-                                     </button>
-                                   </div>
-                                 )}
-                                 <div className="flex items-center space-x-2">
-                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(activity.type)}`}>
-                                     {activity.type}
-                                   </span>
-                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(activity.priority)}`}>
-                                     {activity.priority}
-                                   </span>
-                                 </div>
-                               </div>
-                             </div>
-                             
-                             {isEditing ? (
-                               <textarea
-                                 value={activity.description}
-                                 onChange={(e) => handleActivityEdit(activity.id, 'description', e.target.value)}
-                                 className="w-full text-gray-700 bg-white border border-gray-300 rounded px-3 py-2 mb-3 min-h-[60px]"
-                                 rows={3}
-                               />
-                             ) : (
-                               <p className="text-gray-700 mb-3">{activity.description}</p>
-                             )}
-                             
-                             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-sm text-gray-500 mb-3">
-                               <div className="flex items-center space-x-1">
-                                 <Clock className="w-4 h-4" />
-                                 {isEditing ? (
-                                   <input
-                                     type="text"
-                                     value={activity.time}
-                                     onChange={(e) => handleActivityEdit(activity.id, 'time', e.target.value)}
-                                     className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
-                                   />
-                                 ) : (
-                                   <span>{activity.time}</span>
-                                 )}
-                               </div>
-                               {/* Location Display - Different for Transport vs Other Activities */}
-                               {activity.type === 'transport' ? (
-                                 <>
-                                   <div className="flex items-center space-x-1">
-                                     <MapPin className="w-4 h-4" />
-                                     <span className="text-xs font-medium">From:</span>
-                                     {isEditing ? (
-                                       <input
-                                         type="text"
-                                         value={activity.startLocation || ''}
-                                         onChange={(e) => handleActivityEdit(activity.id, 'startLocation', e.target.value)}
-                                         className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24"
-                                         placeholder="Start"
-                                       />
-                                     ) : (
-                                       <span className="text-xs">{activity.startLocation || 'Not set'}</span>
-                                     )}
-                                   </div>
-                                   <div className="flex items-center space-x-1">
-                                     <Navigation className="w-4 h-4" />
-                                     <span className="text-xs font-medium">To:</span>
-                                     {isEditing ? (
-                                       <input
-                                         type="text"
-                                         value={activity.endLocation || ''}
-                                         onChange={(e) => handleActivityEdit(activity.id, 'endLocation', e.target.value)}
-                                         className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24"
-                                         placeholder="End"
-                                       />
-                                     ) : (
-                                       <span className="text-xs">{activity.endLocation || 'Not set'}</span>
-                                     )}
-                                   </div>
-                                   {/* Distance and Time for Transport */}
-                                   {(activity.calculatedDistance > 0 || activity.calculatedTime > 0) && (
-                                     <div className="flex items-center space-x-1">
-                                       <Car className="w-4 h-4" />
-                                       <span className="text-xs">
-                                         {activity.calculatedDistance > 0 && `${activity.calculatedDistance} mi`}
-                                         {activity.calculatedDistance > 0 && activity.calculatedTime > 0 && ' • '}
-                                         {activity.calculatedTime > 0 && formatDuration(activity.calculatedTime)}
-                                       </span>
-                                     </div>
-                                   )}
-                                 </>
-                               ) : (
-                                 <div className="flex items-center space-x-1">
-                                   <MapPin className="w-4 h-4" />
-                                   {isEditing ? (
-                                     <input
-                                       type="text"
-                                       value={activity.location}
-                                       onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
-                                       className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
-                                     />
-                                   ) : (
-                                     <span>{activity.location}</span>
-                                   )}
-                                 </div>
-                               )}
-                               <div className="flex items-center space-x-1">
-                                 <DollarSign className="w-4 h-4" />
-                                 {isEditing ? (
-                                   <input
-                                     type="number"
-                                     value={activity.cost}
-                                     onChange={(e) => handleActivityEdit(activity.id, 'cost', e.target.value)}
-                                     className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-20"
-                                     min="0"
-                                   />
-                                 ) : (
-                                   <span>${activity.cost}</span>
-                                 )}
-                               </div>
-                             </div>
-                             
-                             {(activity.tips || isEditing) && (
-                               renderFormattedTips(activity, isEditing)
-                             )}
-                             
-                             {/* Google Map Link field for transport activities */}
-                             {activity.type === 'transport' && (
-                               <div className="mt-4">
-                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                   <Link className="inline w-4 h-4 mr-1" />
-                                   Google Map Link
-                                 </label>
-                                 {isEditing ? (
-                                   <div>
-                                     <input
-                                       type="url"
-                                       value={activity.googleMapLink || ''}
-                                       onChange={(e) => handleActivityGoogleMapLinkEdit(activity.id, e.target.value)}
-                                       placeholder="Paste Google Maps link here to extract time and distance"
-                                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                     />
-                                     {activity.googleMapLink && (
-                                       <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                                         {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
-                                           <div className="mb-1">
-                                             <strong>Distance:</strong> {activity.extractedDistance}
-                                           </div>
-                                         )}
-                                         {activity.extractedTime && activity.extractedTime !== 'Not available' && (
-                                           <div>
-                                             <strong>Time:</strong> {activity.extractedTime}
-                                           </div>
-                                         )}
-                                         {(!activity.extractedDistance || activity.extractedDistance === 'Not available') && 
-                                          (!activity.extractedTime || activity.extractedTime === 'Not available') && (
-                                           <div className="text-gray-600">
-                                             Unable to extract time and distance from this link
-                                           </div>
-                                         )}
-                                       </div>
-                                     )}
-                                   </div>
-                                 ) : (
-                                   <div>
-                                     {activity.googleMapLink ? (
-                                       <div>
-                                         <a
-                                           href={activity.googleMapLink}
-                                           target="_blank"
-                                           rel="noopener noreferrer"
-                                           className="text-blue-600 hover:text-blue-800 text-sm break-all"
-                                         >
-                                           {activity.googleMapLink}
-                                         </a>
-                                         {(activity.extractedDistance || activity.extractedTime) && (
-                                           <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                                             {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
-                                               <div className="mb-1">
-                                                 <strong>Distance:</strong> {activity.extractedDistance}
-                                               </div>
-                                             )}
-                                             {activity.extractedTime && activity.extractedTime !== 'Not available' && (
-                                               <div>
-                                                 <strong>Time:</strong> {activity.extractedTime}
-                                               </div>
-                                             )}
-                                           </div>
-                                         )}
-                                       </div>
-                                     ) : (
-                                       <span className="text-gray-500 text-sm">No Google Map link added</span>
-                                     )}
-                                   </div>
-                                 )}
-                               </div>
-                             )}
-                           </div>
-                         </div>
-                       ];
+            {/* Activities */}
+            <div className="p-4 sm:p-6">
+              {viewMode === 'structured' ? (
+                <div className="space-y-4 sm:space-y-6">
+                  {selectedDayActivities.length > 0 ? (
+                    selectedDayActivities.flatMap((activity, index) => {
+                      const IconComponent = getActivityIcon(activity.type);
+                      const isEditing = editingActivity === activity.id;
+                      const nextActivity = selectedDayActivities[index + 1];
+                      
+                      const elements = [
+                        <div key={activity.id} className="flex flex-col space-y-4 p-4 sm:p-5 bg-gray-50 rounded-lg border border-gray-100">
+                          {/* Activity Header */}
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+                              <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-2">
+                              {/* Title */}
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={activity.title}
+                                  onChange={(e) => handleActivityEdit(activity.id, 'title', e.target.value)}
+                                  className="text-base sm:text-lg font-semibold text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 w-full touch-target"
+                                />
+                              ) : (
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">{activity.title}</h3>
+                              )}
+                              
+                              {/* Tags */}
+                              <div className="flex flex-wrap gap-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(activity.type)}`}>
+                                  {activity.type}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(activity.priority)}`}>
+                                  {activity.priority}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
 
-                       // Add travel segment if there's a next activity
-                       if (nextActivity) {
-                         const travelSegment = renderTravelSegment(activity, nextActivity);
-                         if (travelSegment) {
-                           elements.push(travelSegment);
-                         }
-                       }
+                          {/* Description */}
+                          {isEditing ? (
+                            <textarea
+                              value={activity.description}
+                              onChange={(e) => handleActivityEdit(activity.id, 'description', e.target.value)}
+                              className="w-full text-gray-700 bg-white border border-gray-300 rounded-lg px-3 py-2 min-h-[80px] touch-target"
+                              rows={3}
+                            />
+                          ) : (
+                            <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{activity.description}</p>
+                          )}
+                          
+                          {/* Activity Details */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-500">
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-4 h-4 flex-shrink-0" />
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={activity.time}
+                                  onChange={(e) => handleActivityEdit(activity.id, 'time', e.target.value)}
+                                  className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-sm flex-1 touch-target"
+                                />
+                              ) : (
+                                <span>{activity.time}</span>
+                              )}
+                            </div>
+                            
+                            {/* Location Display - Different for Transport vs Other Activities */}
+                            {activity.type === 'transport' ? (
+                              <>
+                                <div className="flex items-center space-x-2">
+                                  <MapPin className="w-4 h-4 flex-shrink-0" />
+                                  <span className="text-xs font-medium">From:</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={activity.startLocation || ''}
+                                      onChange={(e) => handleActivityEdit(activity.id, 'startLocation', e.target.value)}
+                                      className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs flex-1 touch-target"
+                                      placeholder="Start location"
+                                    />
+                                  ) : (
+                                    <span className="text-xs truncate">{activity.startLocation || 'Not set'}</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Navigation className="w-4 h-4 flex-shrink-0" />
+                                  <span className="text-xs font-medium">To:</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={activity.endLocation || ''}
+                                      onChange={(e) => handleActivityEdit(activity.id, 'endLocation', e.target.value)}
+                                      className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs flex-1 touch-target"
+                                      placeholder="End location"
+                                    />
+                                  ) : (
+                                    <span className="text-xs truncate">{activity.endLocation || 'Not set'}</span>
+                                  )}
+                                </div>
+                                {/* Distance and Time for Transport */}
+                                {(activity.calculatedDistance > 0 || activity.calculatedTime > 0) && (
+                                  <div className="flex items-center space-x-1">
+                                    <Car className="w-4 h-4" />
+                                    <span className="text-xs">
+                                      {activity.calculatedDistance > 0 && `${activity.calculatedDistance} mi`}
+                                      {activity.calculatedDistance > 0 && activity.calculatedTime > 0 && ' • '}
+                                      {activity.calculatedTime > 0 && formatDuration(activity.calculatedTime)}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                <MapPin className="w-4 h-4" />
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={activity.location}
+                                    onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
+                                    className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs w-32"
+                                  />
+                                ) : (
+                                  <span>{activity.location}</span>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex items-center space-x-1">
+                              <DollarSign className="w-4 h-4" />
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={activity.cost}
+                                  onChange={(e) => handleActivityEdit(activity.id, 'cost', e.target.value)}
+                                  className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs w-20"
+                                  min="0"
+                                />
+                              ) : (
+                                <span>${activity.cost}</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {(activity.tips || isEditing) && (
+                            renderFormattedTips(activity, isEditing)
+                          )}
+                          
+                          {/* Google Map Link field for transport activities */}
+                          {activity.type === 'transport' && (
+                            <div className="mt-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Link className="inline w-4 h-4 mr-1" />
+                                Google Map Link
+                              </label>
+                              {isEditing ? (
+                                <div>
+                                  <input
+                                    type="url"
+                                    value={activity.googleMapLink || ''}
+                                    onChange={(e) => handleActivityGoogleMapLinkEdit(activity.id, e.target.value)}
+                                    placeholder="Paste Google Maps link here to extract time and distance"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                  {activity.googleMapLink && (
+                                    <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                      {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
+                                        <div className="mb-1">
+                                          <strong>Distance:</strong> {activity.extractedDistance}
+                                        </div>
+                                      )}
+                                      {activity.extractedTime && activity.extractedTime !== 'Not available' && (
+                                        <div>
+                                          <strong>Time:</strong> {activity.extractedTime}
+                                        </div>
+                                      )}
+                                      {(!activity.extractedDistance || activity.extractedDistance === 'Not available') && 
+                                       (!activity.extractedTime || activity.extractedTime === 'Not available') && (
+                                        <div className="text-gray-600">
+                                          Unable to extract time and distance from this link
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div>
+                                  {activity.googleMapLink ? (
+                                    <div>
+                                      <a
+                                        href={activity.googleMapLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                                      >
+                                        {activity.googleMapLink}
+                                      </a>
+                                      {(activity.extractedDistance || activity.extractedTime) && (
+                                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                          {activity.extractedDistance && activity.extractedDistance !== 'Not available' && (
+                                            <div className="mb-1">
+                                              <strong>Distance:</strong> {activity.extractedDistance}
+                                            </div>
+                                          )}
+                                          {activity.extractedTime && activity.extractedTime !== 'Not available' && (
+                                            <div>
+                                              <strong>Time:</strong> {activity.extractedTime}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-500 text-sm">No Google Map link added</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Action Buttons */}
+                          <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-gray-200">
+                            {isEditing ? (
+                              <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                <button
+                                  onClick={() => handleActivitySave(activity.id)}
+                                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors touch-target font-medium"
+                                >
+                                  Save Changes
+                                </button>
+                                <button
+                                  onClick={() => setEditingActivity(null)}
+                                  className="px-4 py-2 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors touch-target font-medium"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {/* Move buttons */}
+                                {activity.day > 1 && (
+                                  <button
+                                    onClick={() => handleMoveActivity(activity.id, 'left')}
+                                    className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target"
+                                    title={`Move to Day ${activity.day - 1}`}
+                                  >
+                                    <ArrowLeft className="w-4 h-4" />
+                                    <span className="text-sm">Day {activity.day - 1}</span>
+                                  </button>
+                                )}
+                                {activity.day < totalDays && (
+                                  <button
+                                    onClick={() => handleMoveActivity(activity.id, 'right')}
+                                    className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target"
+                                    title={`Move to Day ${activity.day + 1}`}
+                                  >
+                                    <span className="text-sm">Day {activity.day + 1}</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                  </button>
+                                )}
+                                
+                                {/* AI Advice button */}
+                                <button
+                                  onClick={() => handleGetAIAdvice(activity.id)}
+                                  disabled={gettingAIAdvice === activity.id}
+                                  className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 touch-target"
+                                  title="Get AI advice for this activity"
+                                >
+                                  {gettingAIAdvice === activity.id ? (
+                                    <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                                  ) : (
+                                    <Sparkles className="w-4 h-4" />
+                                  )}
+                                  <span className="text-sm">AI Tips</span>
+                                </button>
+                                
+                                {/* Edit button */}
+                                <button
+                                  onClick={() => setEditingActivity(activity.id)}
+                                  className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors touch-target"
+                                >
+                                  <span className="text-sm">Edit</span>
+                                </button>
+                                
+                                {/* Delete button */}
+                                <button
+                                  onClick={() => setShowDeleteConfirm(activity.id)}
+                                  className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors touch-target"
+                                  title="Delete activity"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span className="text-sm">Delete</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ];
 
-                       return elements;
-                     })
+                      // Add travel segment if there's a next activity
+                      if (nextActivity) {
+                        const travelSegment = renderTravelSegment(activity, nextActivity);
+                        if (travelSegment) {
+                          elements.push(travelSegment);
+                        }
+                      }
+
+                      return elements;
+                    })
                                     ) : (
                    <div className="text-center py-8">
-                     <p className="text-gray-500">No activities planned for Day {selectedDay}</p>
+                     <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                       <Calendar className="w-8 h-8 text-gray-400" />
+                     </div>
+                     <h3 className="text-lg font-medium text-gray-900 mb-2">No activities for Day {selectedDay}</h3>
+                     <p className="text-gray-500 mb-4">Add your first activity to get started!</p>
+                     <button
+                       onClick={() => handleAddActivity(selectedDay)}
+                       className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors touch-target font-medium"
+                     >
+                       Add Activity
+                     </button>
                    </div>
                  )}
                  
@@ -1890,7 +1924,7 @@ const ItineraryPage = () => {
                  {selectedDayActivities.length > 1 && (
                    <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Day {selectedDay} Travel Summary</h4>
-                     <div className="flex items-center space-x-6 text-sm">
+                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm">
                        {(() => {
                          let totalDistance = 0;
                          let totalDuration = 0;
@@ -1942,7 +1976,7 @@ const ItineraryPage = () => {
                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Add New Activity to Day {selectedDay}</h4>
                      <div className="space-y-4">
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                          <div>
                            <label className="block text-sm font-medium text-gray-700 mb-1">Activity Title *</label>
                            <input
@@ -1950,7 +1984,7 @@ const ItineraryPage = () => {
                              value={newActivity.title}
                              onChange={(e) => handleNewActivityChange('title', e.target.value)}
                              placeholder="e.g., Visit Local Museum"
-                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                            />
                          </div>
                          <div>
@@ -1960,12 +1994,12 @@ const ItineraryPage = () => {
                              value={newActivity.time}
                              onChange={(e) => handleNewActivityChange('time', e.target.value)}
                              placeholder="e.g., 10:00 AM - 12:00 PM"
-                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                            />
                          </div>
                        </div>
                        
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                       <div className="space-y-4">
                          <div>
                            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                            <select
@@ -1975,7 +2009,7 @@ const ItineraryPage = () => {
                                // Auto-update time based on type
                                handleNewActivityChange('time', getDefaultTime(e.target.value));
                              }}
-                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                            >
                              <option value="activity">Activity</option>
                              <option value="restaurant">Restaurant</option>
@@ -1983,9 +2017,10 @@ const ItineraryPage = () => {
                              <option value="transport">Transport</option>
                            </select>
                          </div>
+                         
                          {/* Conditional Location Fields based on activity type */}
                          {newActivity.type === 'transport' ? (
-                           <>
+                           <div className="space-y-3">
                              <div>
                                <label className="block text-sm font-medium text-gray-700 mb-1">Start Location</label>
                                <input
@@ -1993,7 +2028,7 @@ const ItineraryPage = () => {
                                  value={newActivity.startLocation}
                                  onChange={(e) => handleStartLocationChange(e.target.value)}
                                  placeholder="Starting location"
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                                />
                              </div>
                              <div>
@@ -2003,7 +2038,7 @@ const ItineraryPage = () => {
                                  value={newActivity.endLocation}
                                  onChange={(e) => handleEndLocationChange(e.target.value)}
                                  placeholder="Destination location"
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                                />
                              </div>
                              <div>
@@ -2011,7 +2046,7 @@ const ItineraryPage = () => {
                                <select
                                  value={newActivity.transportMode}
                                  onChange={(e) => handleTransportModeChange(e.target.value)}
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                                >
                                  <option value="driving">Driving</option>
                                  <option value="walking">Walking</option>
@@ -2019,7 +2054,7 @@ const ItineraryPage = () => {
                                  <option value="cycling">Cycling</option>
                                </select>
                              </div>
-                           </>
+                           </div>
                          ) : (
                            <div>
                              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
@@ -2028,10 +2063,11 @@ const ItineraryPage = () => {
                                value={newActivity.location}
                                onChange={(e) => handleNewActivityChange('location', e.target.value)}
                                placeholder="Location"
-                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                              />
                            </div>
                          )}
+                         
                          <div>
                            <label className="block text-sm font-medium text-gray-700 mb-1">Cost ($)</label>
                            <input
@@ -2039,7 +2075,7 @@ const ItineraryPage = () => {
                              value={newActivity.cost}
                              onChange={(e) => handleNewActivityChange('cost', e.target.value)}
                              min="0"
-                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                            />
                          </div>
                        </div>
@@ -2051,7 +2087,7 @@ const ItineraryPage = () => {
                            onChange={(e) => handleNewActivityChange('description', e.target.value)}
                            placeholder="Describe this activity..."
                            rows={3}
-                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                          />
                        </div>
                        
@@ -2062,7 +2098,7 @@ const ItineraryPage = () => {
                            onChange={(e) => handleNewActivityChange('tips', e.target.value)}
                            placeholder="Any tips or recommendations..."
                            rows={2}
-                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
                          />
                        </div>
                        
@@ -2130,17 +2166,17 @@ const ItineraryPage = () => {
                          </>
                        )}
                        
-                       <div className="flex items-center justify-end space-x-3 pt-4 border-t border-blue-200">
+                       <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end pt-4 border-t border-blue-200">
                          <button
                            onClick={handleCancelNewActivity}
-                           className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                           className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors touch-target font-medium"
                          >
                            Cancel
                          </button>
                          <button
                            onClick={handleSaveNewActivity}
                            disabled={!newActivity.title.trim()}
-                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-target font-medium"
                          >
                            Add Activity
                          </button>
@@ -2151,7 +2187,7 @@ const ItineraryPage = () => {
                    <div className="mt-6 text-center">
                      <button
                        onClick={() => handleAddActivity(selectedDay)}
-                       className="inline-flex items-center px-4 py-2 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                       className="inline-flex items-center px-6 py-3 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors touch-target font-medium"
                      >
                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -2179,7 +2215,7 @@ const ItineraryPage = () => {
             <button
               onClick={handleSave}
               disabled={saved}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-lg font-medium transition-colors touch-target ${
                 saved
                   ? 'bg-green-100 text-green-800 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
