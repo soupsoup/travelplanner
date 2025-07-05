@@ -1,5 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Function to fetch public Google Docs using export endpoint
+async function fetchPublicDocument(documentId: string): Promise<string> {
+  try {
+    // Use Google Docs public export endpoint for plain text
+    const exportUrl = `https://docs.google.com/document/d/${documentId}/export?format=txt`;
+    
+    const response = await fetch(exportUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TravelPlanner/1.0)',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Export failed: ${response.status} ${response.statusText}`);
+      
+      // Try alternative method with published URL
+      const publishedUrl = `https://docs.google.com/document/d/${documentId}/pub`;
+      const publishedResponse = await fetch(publishedUrl);
+      
+      if (publishedResponse.ok) {
+        const html = await publishedResponse.text();
+        // Extract text from HTML (simple approach)
+        const textMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (textMatch) {
+          // Remove HTML tags and decode entities
+          return textMatch[1]
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/\s+/g, ' ')
+            .trim();
+        }
+      }
+      
+      throw new Error(`Unable to fetch document: ${response.status}`);
+    }
+
+    const textContent = await response.text();
+    return textContent;
+  } catch (error) {
+    console.error('Error fetching public document:', error);
+    throw error;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { documentId, accessToken } = await request.json();
@@ -11,43 +59,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare headers for the Google Docs API request
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // Only add authorization header if we have a real access token
+    let textContent = '';
+    let documentTitle = 'Imported Document';
+    
+    // Try different approaches based on authentication
     if (accessToken && accessToken !== 'public_access') {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-    }
+      // Use Google Docs API with authentication
+      try {
+        const response = await fetch(
+          `https://docs.googleapis.com/v1/documents/${documentId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
-    // Fetch document content from Google Docs API
-    const response = await fetch(
-      `https://docs.googleapis.com/v1/documents/${documentId}`,
-      {
-        headers,
+        if (response.ok) {
+          const document = await response.json();
+          textContent = extractTextContent(document);
+          documentTitle = document.title || 'Imported Document';
+        } else {
+          throw new Error(`API call failed: ${response.status}`);
+        }
+      } catch (apiError) {
+        console.log('Google Docs API failed, trying public export...');
+        // Fall back to public export method
+        textContent = await fetchPublicDocument(documentId);
       }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
+    } else {
+      // Use public export method for public documents
+      textContent = await fetchPublicDocument(documentId);
+    }
+    
+    if (!textContent) {
       return NextResponse.json(
-        { error: 'Failed to fetch document', details: error },
-        { status: response.status }
+        { error: 'Unable to fetch document content. Please ensure the document is public and accessible.' },
+        { status: 400 }
       );
     }
-
-    const document = await response.json();
-    
-    // Extract text content from Google Doc
-    const textContent = extractTextContent(document);
     
     // Parse the text into itinerary format
     const parsedItinerary = parseGoogleDocItinerary(textContent);
 
     return NextResponse.json({
       success: true,
-      documentTitle: document.title,
+      documentTitle,
       textContent,
       itinerary: parsedItinerary
     });

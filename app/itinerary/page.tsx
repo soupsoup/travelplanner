@@ -429,38 +429,12 @@ const ItineraryPage = () => {
 
   const handleGoogleAuth = async () => {
     try {
-      // For now, we'll make the document publicly accessible
-      // In a production implementation, you'd use Google OAuth client library
-      
-      const instructions = `To import from Google Docs, you need to make your document publicly accessible:
-
-1. Open your Google Doc
-2. Click the "Share" button (top right)
-3. Click "Change to anyone with the link"
-4. Set permission to "Viewer" 
-5. Copy the link and paste it here
-
-Alternatively, you can:
-- Type "demo" to try with sample data
-- Contact support for OAuth setup
-
-Would you like to continue with a public document, or use the demo?`;
-      
-      const choice = confirm(instructions + '\n\nClick OK to continue with public document, or Cancel to use demo.');
-      
-      if (choice) {
-        // For public documents, we don't need an access token
-        // The Google Docs API allows access to public documents
-        setGoogleAccessToken('public_access');
-        return true;
-      } else {
-        // User chose demo
-        setGoogleDocsUrl('demo');
-        return false; // Don't proceed with auth, but will use demo
-      }
+      // Since we now use public export method, no authentication needed
+      setGoogleAccessToken('public_access');
+      return true;
     } catch (error) {
-      console.error('Google authentication failed:', error);
-      alert('Failed to set up Google Docs access. Please try again or use demo mode.');
+      console.error('Google setup failed:', error);
+      alert('Failed to set up Google Docs access. Please try again.');
       return false;
     }
   };
@@ -1981,15 +1955,18 @@ Would you like to continue with a public document, or use the demo?`;
                   placeholder="https://docs.google.com/document/d/... (or type 'demo' for sample)"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
-                <div className="mt-2 text-xs text-gray-600 space-y-1">
-                  <p className="font-medium">📝 To import your Google Doc:</p>
-                  <ol className="list-decimal ml-4 space-y-1">
-                    <li>Open your Google Doc with the travel itinerary</li>
-                    <li>Click "Share" → "Change to anyone with the link"</li>
-                    <li>Set permission to "Viewer"</li>
-                    <li>Copy the link and paste it above</li>
-                  </ol>
-                  <p className="pt-1">
+                <div className="mt-2 text-xs text-gray-600 space-y-2">
+                  <div className="p-2 bg-blue-50 rounded border-l-4 border-blue-400">
+                    <p className="font-medium text-blue-800">📝 Required: Make your document public</p>
+                    <ol className="list-decimal ml-4 space-y-1 mt-1 text-blue-700">
+                      <li>Open your Google Doc with the travel itinerary</li>
+                      <li>Click "Share" button (top right corner)</li>
+                      <li>Click "Change to anyone with the link"</li>
+                      <li>Set permission to "Viewer"</li>
+                      <li>Copy the link and paste it above</li>
+                    </ol>
+                  </div>
+                  <p className="text-center font-medium">
                     <strong>Or type "demo"</strong> to try with sample data
                   </p>
                 </div>
