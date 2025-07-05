@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation, Plus } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation, Plus, FileText, Download } from 'lucide-react';
 import { extractTimeAndDistance, isValidGoogleMapLink } from '../../lib/mapUtils';
 import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../lib/timeUtils';
 
@@ -24,6 +24,10 @@ const ItineraryPage = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [travelSegments, setTravelSegments] = useState<Record<string, LocationDistance>>({});
   const [totalDays, setTotalDays] = useState(7); // Dynamic days state
+  const [showGoogleDocsImport, setShowGoogleDocsImport] = useState(false);
+  const [googleDocsUrl, setGoogleDocsUrl] = useState('');
+  const [importingGoogleDoc, setImportingGoogleDoc] = useState(false);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [newActivity, setNewActivity] = useState({
     title: '',
     description: '',
@@ -416,6 +420,164 @@ const ItineraryPage = () => {
         console.error('Error updating data in localStorage:', error);
       }
     }
+  };
+
+  const handleGoogleDocsImport = () => {
+    setShowGoogleDocsImport(true);
+    setGoogleDocsUrl('');
+  };
+
+  const handleGoogleAuth = async () => {
+    try {
+      // Initialize Google OAuth
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''; // You'll need to set this
+      
+      if (!clientId) {
+        alert('Google OAuth not configured. Please contact the administrator.');
+        return;
+      }
+
+      // For now, we'll use a simple approach where user provides the document URL
+      // In a full implementation, you'd use Google OAuth client library
+      const accessToken = prompt('Please provide your Google OAuth access token (for testing purposes)');
+      
+      if (accessToken) {
+        setGoogleAccessToken(accessToken);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Google authentication failed:', error);
+      alert('Failed to authenticate with Google. Please try again.');
+      return false;
+    }
+  };
+
+  const extractDocumentId = (url: string): string | null => {
+    // Handle demo case
+    if (url.toLowerCase().trim() === 'demo') {
+      return 'demo_document_id';
+    }
+    
+    // Extract document ID from various Google Docs URL formats
+    const patterns = [
+      /\/document\/d\/([a-zA-Z0-9-_]+)/,
+      /\/d\/([a-zA-Z0-9-_]+)/,
+      /id=([a-zA-Z0-9-_]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  };
+
+  const handleImportGoogleDoc = async () => {
+    if (!googleDocsUrl.trim()) {
+      alert('Please enter a Google Docs URL');
+      return;
+    }
+
+    const documentId = extractDocumentId(googleDocsUrl);
+    if (!documentId) {
+      alert('Invalid Google Docs URL. Please make sure you copied the full URL.');
+      return;
+    }
+
+    try {
+      setImportingGoogleDoc(true);
+      
+      // For demo purposes, use the demo endpoint first
+      // In production, you'd use the real Google Docs API with proper OAuth
+      const response = await fetch('/api/google-docs-demo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          documentId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to import document');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.itinerary) {
+        // Update the itinerary with imported data
+        const importedActivities = result.itinerary.activities || [];
+        const importedOverview = result.itinerary.overview || '';
+        
+        if (importedActivities.length > 0) {
+          // Update activity IDs to prevent conflicts
+          const maxExistingId = activities.length > 0 ? Math.max(...activities.map(a => a.id)) : 0;
+          const updatedImportedActivities = importedActivities.map((activity, index) => ({
+            ...activity,
+            id: maxExistingId + index + 1
+          }));
+          
+          // Merge with existing activities or replace
+          const shouldReplace = confirm(
+            `Found ${importedActivities.length} activities in the Google Doc. ` +
+            `Do you want to replace your current itinerary or add these activities to it?`
+          );
+          
+          if (shouldReplace) {
+            setActivities(updatedImportedActivities);
+            setTripOverview(importedOverview);
+            
+            // Update totalDays based on imported activities
+            const maxDay = Math.max(...updatedImportedActivities.map(a => a.day));
+            setTotalDays(Math.max(maxDay, 1));
+            
+            // Update localStorage
+            const updatedItinerary = generateItineraryFromActivities(updatedImportedActivities);
+            setItinerary(updatedItinerary);
+            safeUpdateLocalStorage(updatedItinerary);
+          } else {
+            // Add to existing activities
+            const allActivities = [...activities, ...updatedImportedActivities];
+            setActivities(allActivities);
+            
+            // Update totalDays if needed
+            const maxDay = Math.max(...allActivities.map(a => a.day));
+            setTotalDays(Math.max(maxDay, totalDays));
+            
+            // Update localStorage
+            const updatedItinerary = generateItineraryFromActivities(allActivities);
+            setItinerary(updatedItinerary);
+            safeUpdateLocalStorage(updatedItinerary);
+          }
+          
+          setShowGoogleDocsImport(false);
+          setGoogleDocsUrl('');
+          alert(`Successfully imported ${importedActivities.length} activities from Google Doc!`);
+        } else {
+          alert('No activities found in the Google Doc. Please check the document format.');
+        }
+      } else {
+        throw new Error('Failed to parse the Google Doc');
+      }
+    } catch (error) {
+      console.error('Error importing Google Doc:', error);
+      alert(`Failed to import Google Doc: ${error.message}`);
+    } finally {
+      setImportingGoogleDoc(false);
+    }
+  };
+
+  const handleCancelGoogleDocsImport = () => {
+    setShowGoogleDocsImport(false);
+    setGoogleDocsUrl('');
+    setGoogleAccessToken(null);
   };
 
   const handleEditOverview = () => {
@@ -1091,40 +1253,47 @@ const ItineraryPage = () => {
              </div>
            </div>
 
-                     {/* Daily Timeline */}
-           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-             <div className="p-6 border-b border-gray-200">
-               <div className="flex items-center justify-between mb-4">
-                 <div className="flex items-center space-x-3">
-                   <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
-                   <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
-                     <Clock className="w-3 h-3 text-green-600" />
-                     <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
-                   </div>
-                 </div>
-                 <div className="flex items-center space-x-2">
-                   <button
-                     onClick={() => setViewMode('structured')}
-                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                       viewMode === 'structured'
-                         ? 'bg-blue-100 text-blue-700'
-                         : 'text-gray-500 hover:text-gray-700'
-                     }`}
-                   >
-                     Structured
-                   </button>
-                   <button
-                     onClick={() => setViewMode('original')}
-                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                       viewMode === 'original'
-                         ? 'bg-blue-100 text-blue-700'
-                         : 'text-gray-500 hover:text-gray-700'
-                     }`}
-                   >
-                     Original
-                   </button>
-                 </div>
-               </div>
+                               {/* Daily Timeline */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
+                    <Clock className="w-3 h-3 text-green-600" />
+                    <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleGoogleDocsImport}
+                    className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Import from Google Docs
+                  </button>
+                  <button
+                    onClick={() => setViewMode('structured')}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      viewMode === 'structured'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Structured
+                  </button>
+                  <button
+                    onClick={() => setViewMode('original')}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      viewMode === 'original'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Original
+                  </button>
+                </div>
+              </div>
                {viewMode === 'structured' && (
                  <div className="flex items-center gap-2">
                    <div className="flex flex-wrap gap-2">
@@ -1742,6 +1911,99 @@ const ItineraryPage = () => {
               >
                 Save Trip
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Google Docs Import Modal */}
+      {showGoogleDocsImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Import from Google Docs</h3>
+              <button
+                onClick={handleCancelGoogleDocsImport}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Google Docs URL
+                </label>
+                <input
+                  type="url"
+                  value={googleDocsUrl}
+                  onChange={(e) => setGoogleDocsUrl(e.target.value)}
+                  placeholder="https://docs.google.com/document/d/... (or type 'demo' for sample)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter any Google Docs URL or type "demo" to try with sample data
+                </p>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                <div className="flex items-start space-x-2">
+                  <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-green-700">
+                    <p className="font-medium mb-1">Quick Demo:</p>
+                    <p className="text-xs">Type "demo" in the URL field above to try importing a sample 3-day itinerary with various activities, hotels, and restaurants.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium mb-1">Document Format Tips:</p>
+                    <ul className="text-xs space-y-1">
+                      <li>• Organize content by days (e.g., "Day 1", "Day 2")</li>
+                      <li>• Include activity titles and times (e.g., "9:00 AM - 12:00 PM")</li>
+                      <li>• Add costs using $ format (e.g., $25, $150)</li>
+                      <li>• Specify locations for each activity</li>
+                      <li>• Use bullet points or dashes for activities</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCancelGoogleDocsImport}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImportGoogleDoc}
+                  disabled={importingGoogleDoc || !googleDocsUrl.trim()}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {importingGoogleDoc ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Importing...
+                    </div>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2 inline" />
+                      Import Document
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
