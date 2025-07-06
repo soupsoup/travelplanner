@@ -1537,92 +1537,100 @@ const ItineraryPage = () => {
 
           {/* Daily Timeline */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-4 sm:p-6 border-b border-gray-200">
-              <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <h2 className="text-lg font-semibold text-gray-900">Daily Timeline</h2>
-                    <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 rounded-full">
-                      <Clock className="w-3 h-3 text-green-600" />
-                      <span className="text-xs font-medium text-green-700">Sorted chronologically</span>
+            <div className="p-6 sm:p-8 border-b border-gray-200">
+              <div className="space-y-6">
+                {/* Header Section */}
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <h2 className="text-2xl font-bold text-gray-900">Daily Timeline</h2>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm text-gray-600">Sorted chronologically</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => setViewMode('structured')}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 touch-target ${
+                          viewMode === 'structured'
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                        }`}
+                      >
+                        Structured View
+                      </button>
+                      <button
+                        onClick={() => setViewMode('original')}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 touch-target ${
+                          viewMode === 'original'
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                        }`}
+                      >
+                        Original View
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  
+                  {/* Import Section */}
+                  <div className="flex justify-center pt-4 border-t border-gray-100">
                     <button
-                      onClick={() => setViewMode('structured')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-target ${
-                        viewMode === 'structured'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
+                      onClick={handleGoogleDocsImport}
+                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl text-sm font-medium touch-target"
                     >
-                      Structured
-                    </button>
-                    <button
-                      onClick={() => setViewMode('original')}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-target ${
-                        viewMode === 'original'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      Original
+                      <FileText className="w-4 h-4 mr-2" />
+                      Import from Google Docs
                     </button>
                   </div>
-                </div>
-                
-                <div className="flex flex-col space-y-3">
-                  <button
-                    onClick={handleGoogleDocsImport}
-                    className="inline-flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium touch-target"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Import from Google Docs
-                  </button>
                 </div>
               </div>
               
               {viewMode === 'structured' && (
-                <div className="mt-6 space-y-4">
+                <div className="mt-8 space-y-6">
                   {/* Day Navigation - Mobile Optimized */}
-                  <div className="overflow-x-auto">
-                    <div className="flex space-x-2 pb-2 min-w-max">
-                      {days.map(day => (
-                        <button
-                          key={day}
-                          onClick={() => setSelectedDay(day)}
-                          className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors touch-target flex-shrink-0 ${
-                            selectedDay === day
-                              ? 'bg-blue-600 text-white shadow-md'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          Day {day}
-                        </button>
-                      ))}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Select Day</h3>
+                    <div className="overflow-x-auto">
+                      <div className="flex space-x-3 pb-2 min-w-max">
+                        {days.map(day => (
+                          <button
+                            key={day}
+                            onClick={() => setSelectedDay(day)}
+                            className={`px-5 py-3 rounded-xl text-sm font-medium transition-all duration-200 touch-target flex-shrink-0 ${
+                              selectedDay === day
+                                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                            }`}
+                          >
+                            Day {day}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Add/Remove Day Controls */}
-                  <div className="flex items-center justify-center space-x-3 pt-2 border-t border-gray-100">
-                    <button
-                      onClick={handleAddDay}
-                      className="flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors touch-target"
-                      title="Add Day"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="text-sm font-medium">Add Day</span>
-                    </button>
-                    {totalDays > 1 && (
+                  {/* Day Management Controls */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Day Management</h4>
+                    <div className="flex items-center justify-center space-x-4">
                       <button
-                        onClick={handleRemoveDay}
-                        className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors touch-target"
-                        title="Remove Last Day"
+                        onClick={handleAddDay}
+                        className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg touch-target"
                       >
-                        <Trash2 className="w-4 h-4" />
-                        <span className="text-sm font-medium">Remove Day</span>
+                        <Plus className="w-4 h-4" />
+                        <span className="text-sm font-medium">Add Day</span>
                       </button>
-                    )}
+                      {totalDays > 1 && (
+                        <button
+                          onClick={handleRemoveDay}
+                          className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-md hover:shadow-lg touch-target"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="text-sm font-medium">Remove Day</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
