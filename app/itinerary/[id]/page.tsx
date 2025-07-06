@@ -402,32 +402,31 @@ const ItineraryDetailPage = () => {
   };
 
   const handleActivityEdit = (activityId: number, field: string, value: string) => {
-    setActivities(prev => prev.map(activity => 
-      activity.id === activityId 
-        ? { 
-            ...activity, 
-            [field]: field === 'cost' ? parseInt(value) || 0 : 
-                    field === 'manualDistance' ? parseFloat(value) || 0 :
-                    field === 'manualTime' ? parseInt(value) || 0 : value 
-          }
-        : activity
-    ));
-    
-    // Update trip budget when cost changes
-    if (field === 'cost') {
-      const updatedActivities = activities.map(activity => 
+    setActivities(prev => {
+      const updatedActivities = prev.map(activity => 
         activity.id === activityId 
-          ? { ...activity, cost: parseInt(value) || 0 }
+          ? { 
+              ...activity, 
+              [field]: field === 'cost' ? parseInt(value) || 0 : 
+                      field === 'manualDistance' ? parseFloat(value) || 0 :
+                      field === 'manualTime' ? parseInt(value) || 0 : value 
+            }
           : activity
       );
-      setTrip(prev => prev ? {
-        ...prev,
-        budget: {
-          ...prev.budget,
-          total: recalculateBudget(updatedActivities)
-        }
-      } : prev);
-    }
+      
+      // Update trip budget when cost changes
+      if (field === 'cost') {
+        setTrip(tripPrev => tripPrev ? {
+          ...tripPrev,
+          budget: {
+            ...tripPrev.budget,
+            total: recalculateBudget(updatedActivities)
+          }
+        } : tripPrev);
+      }
+      
+      return updatedActivities;
+    });
     
     setHasUnsavedChanges(true);
   };
@@ -480,17 +479,20 @@ const ItineraryDetailPage = () => {
       cost: newActivity.cost || generateEstimatedCost(newActivity.type, Math.abs(tempId))
     };
     
-    setActivities(prev => [...prev, activityToAdd]);
-    
-    // Update trip budget with new activity cost
-    const updatedActivities = [...activities, activityToAdd];
-    setTrip(prev => prev ? {
-      ...prev,
-      budget: {
-        ...prev.budget,
-        total: recalculateBudget(updatedActivities)
-      }
-    } : prev);
+    setActivities(prev => {
+      const updatedActivities = [...prev, activityToAdd];
+      
+      // Update trip budget with new activity cost
+      setTrip(tripPrev => tripPrev ? {
+        ...tripPrev,
+        budget: {
+          ...tripPrev.budget,
+          total: recalculateBudget(updatedActivities)
+        }
+      } : tripPrev);
+      
+      return updatedActivities;
+    });
     
     setAddingActivity(null);
     setNewActivity({
@@ -542,21 +544,20 @@ const ItineraryDetailPage = () => {
   };
 
   const handleDeleteActivity = (activityId: number) => {
-    // Get the cost of the activity being deleted
-    const activityToDelete = activities.find(activity => activity.id === activityId);
-    const deletedCost = activityToDelete?.cost || 0;
-    
-    setActivities(prev => prev.filter(activity => activity.id !== activityId));
-    
-    // Update trip budget by recalculating from remaining activities
-    const updatedActivities = activities.filter(activity => activity.id !== activityId);
-    setTrip(prev => prev ? {
-      ...prev,
-      budget: {
-        ...prev.budget,
-        total: recalculateBudget(updatedActivities)
-      }
-    } : prev);
+    setActivities(prev => {
+      const updatedActivities = prev.filter(activity => activity.id !== activityId);
+      
+      // Update trip budget by recalculating from remaining activities
+      setTrip(tripPrev => tripPrev ? {
+        ...tripPrev,
+        budget: {
+          ...tripPrev.budget,
+          total: recalculateBudget(updatedActivities)
+        }
+      } : tripPrev);
+      
+      return updatedActivities;
+    });
     
     setShowDeleteConfirm(null);
     setHasUnsavedChanges(true);
@@ -597,6 +598,16 @@ const ItineraryDetailPage = () => {
     });
     
     setActivities(updatedActivities);
+    
+    // Update trip budget to reflect any changes
+    setTrip(prev => prev ? {
+      ...prev,
+      budget: {
+        ...prev.budget,
+        total: recalculateBudget(updatedActivities)
+      }
+    } : prev);
+    
     setTotalDays(newDayCount);
     
     if (selectedDay === totalDays) {
