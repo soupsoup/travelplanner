@@ -117,7 +117,7 @@ const ItineraryDetailPage = () => {
     if (!trip || !mounted) return;
     
     try {
-      // Update the trip in savedTrips
+      // Update the trip in savedTrips with better error handling
       const savedTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
       const updatedTrips = savedTrips.map((t: any) => 
         t.id === trip.id 
@@ -129,23 +129,51 @@ const ItineraryDetailPage = () => {
               activitiesCount: activities.length,
               budget: {
                 ...t.budget,
-                total: activities.reduce((sum, activity) => sum + activity.cost, 0)
+                total: activities.reduce((sum, activity) => sum + (activity.cost || 0), 0)
               },
               updatedAt: new Date().toISOString()
             }
           : t
       );
       
-      localStorage.setItem('savedTrips', JSON.stringify(updatedTrips));
+      // Validate the data before saving
+      if (updatedTrips.length === 0) {
+        console.error('No trips found to update');
+        alert('Error: Trip not found. Please refresh the page and try again.');
+        return;
+      }
+      
+      // Save to localStorage with error handling
+      try {
+        localStorage.setItem('savedTrips', JSON.stringify(updatedTrips));
+      } catch (storageError) {
+        console.error('LocalStorage error:', storageError);
+        alert('Storage is full or unavailable. Please clear some browser data and try again.');
+        return;
+      }
       
       // Update current trip state
       const updatedTrip = updatedTrips.find((t: any) => t.id === trip.id);
-      setTrip(updatedTrip);
+      if (updatedTrip) {
+        setTrip(updatedTrip);
+      }
       
       alert('Trip updated successfully!');
     } catch (error) {
       console.error('Error saving trip:', error);
-      alert('Failed to save trip changes.');
+      
+      // More specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('quota') || error.message.includes('storage')) {
+          alert('Storage is full. Please clear some browser data and try again.');
+        } else if (error.message.includes('JSON')) {
+          alert('Data formatting error. Please try refreshing the page and try again.');
+        } else {
+          alert(`Save failed: ${error.message}. Please try again.`);
+        }
+      } else {
+        alert('Failed to save trip changes.');
+      }
     }
   };
 

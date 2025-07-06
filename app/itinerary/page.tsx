@@ -122,35 +122,57 @@ const ItineraryPage = () => {
     try {
       // Generate deterministic IDs to prevent hydration errors
       const tripId = `trip_${mounted ? Date.now() : 1}`;
-      const currentDate = mounted ? new Date().toISOString() : new Date('2024-01-01').toISOString();
+      const currentTimestamp = mounted ? new Date().toISOString() : new Date('2024-01-01').toISOString();
+      
+      // Use proper dates from tripDetails, or defaults if not available
+      const startDate = tripDetails?.startDate || new Date().toISOString().split('T')[0];
+      const endDate = tripDetails?.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
       const savedTrip = {
         id: tripId,
         name: tripName,
-        destination: tripDetails?.destination || 'Unknown',
-        startDate: currentDate,
-        endDate: currentDate,
-        daysCount: tripDetails?.days || 7,
+        destination: tripDetails?.destination || 'Unknown Destination',
+        startDate: startDate,
+        endDate: endDate,
+        daysCount: tripDetails?.days || totalDays || 7,
         travelers: tripDetails?.people || 1,
         budget: { 
-          total: activities.reduce((sum, activity) => sum + activity.cost, 0), 
+          total: activities.reduce((sum, activity) => sum + (activity.cost || 0), 0), 
           currency: 'USD' 
         },
         status: 'planning' as const,
         image: tripImage || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
         activitiesCount: activities.length,
         completedActivities: 0,
-        tripDetails: tripDetails,
+        tripDetails: tripDetails || {
+          destination: 'Unknown Destination',
+          days: totalDays || 7,
+          people: 1,
+          startDate: startDate,
+          endDate: endDate
+        },
         activities: activities,
-        overview: tripOverview,
-        createdAt: currentDate,
-        updatedAt: currentDate
+        overview: tripOverview || `A ${totalDays || 7}-day trip to ${tripDetails?.destination || 'your destination'}`,
+        createdAt: currentTimestamp,
+        updatedAt: currentTimestamp
       };
 
-      // Save to localStorage
-      const existingTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
-      existingTrips.push(savedTrip);
-      localStorage.setItem('savedTrips', JSON.stringify(existingTrips));
+      // Validate the trip data before saving
+      if (!savedTrip.destination || savedTrip.destination === 'Unknown Destination') {
+        alert('Please ensure you have a valid destination. Try creating your itinerary from the AI Builder first.');
+        return;
+      }
+
+      // Save to localStorage with error handling
+      try {
+        const existingTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
+        existingTrips.push(savedTrip);
+        localStorage.setItem('savedTrips', JSON.stringify(existingTrips));
+      } catch (storageError) {
+        console.error('LocalStorage error:', storageError);
+        alert('Storage is full or unavailable. Please clear some browser data and try again.');
+        return;
+      }
 
       // Also save current itinerary
       const updatedItinerary = generateItineraryFromActivities(activities);
@@ -163,7 +185,19 @@ const ItineraryPage = () => {
       alert('Trip saved successfully!');
     } catch (error) {
       console.error('Error saving trip:', error);
-      alert('Failed to save trip. Please try again.');
+      
+      // More specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('quota') || error.message.includes('storage')) {
+          alert('Storage is full. Please clear some browser data and try again.');
+        } else if (error.message.includes('JSON')) {
+          alert('Data formatting error. Please try refreshing the page and try again.');
+        } else {
+          alert(`Save failed: ${error.message}. Please try again.`);
+        }
+      } else {
+        alert('Failed to save trip. Please try again.');
+      }
     }
   };
 
