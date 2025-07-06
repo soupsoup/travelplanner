@@ -126,27 +126,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-800">Luxe Travel</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/ai-builder" className="btn-secondary">
-                <Plus className="h-4 w-4 mr-2" />
-                AI Builder
-              </Link>
-              <Link href="/itinerary/new" className="btn-primary">
-                <Plus className="h-4 w-4 mr-2" />
-                New Itinerary
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <div className="hero-gradient text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
@@ -163,6 +142,36 @@ const Dashboard: React.FC = () => {
 
       {/* Dashboard Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-12">
+          <Link href="/ai-builder" className="group">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white bg-opacity-20 rounded-xl">
+                  <Plus className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold">AI Builder</div>
+                  <div className="text-sm text-amber-100">Create with AI assistance</div>
+                </div>
+              </div>
+            </div>
+          </Link>
+          <Link href="/itinerary/new" className="group">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white bg-opacity-20 rounded-xl">
+                  <Plus className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold">New Itinerary</div>
+                  <div className="text-sm text-blue-100">Start from scratch</div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+
         {/* Search and Filter */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
