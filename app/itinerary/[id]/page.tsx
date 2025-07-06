@@ -169,6 +169,11 @@ const ItineraryDetailPage = () => {
     return result;
   };
 
+  // Helper function to recalculate total budget from activities
+  const recalculateBudget = (activitiesList: any[]) => {
+    return activitiesList.reduce((sum, activity) => sum + (activity.cost || 0), 0);
+  };
+
   const saveTrip = async () => {
     if (!trip || !mounted || isSaving) return;
     
@@ -352,7 +357,7 @@ const ItineraryDetailPage = () => {
           activitiesCount: activities.length,
           budget: {
             ...prev.budget,
-            total: activities.reduce((sum: number, activity: any) => sum + (parseFloat(activity.cost) || 0), 0)
+            total: recalculateBudget(activities)
           },
           updatedAt: new Date().toISOString()
         }));
@@ -407,6 +412,23 @@ const ItineraryDetailPage = () => {
           }
         : activity
     ));
+    
+    // Update trip budget when cost changes
+    if (field === 'cost') {
+      const updatedActivities = activities.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, cost: parseInt(value) || 0 }
+          : activity
+      );
+      setTrip(prev => prev ? {
+        ...prev,
+        budget: {
+          ...prev.budget,
+          total: recalculateBudget(updatedActivities)
+        }
+      } : prev);
+    }
+    
     setHasUnsavedChanges(true);
   };
 
@@ -459,6 +481,17 @@ const ItineraryDetailPage = () => {
     };
     
     setActivities(prev => [...prev, activityToAdd]);
+    
+    // Update trip budget with new activity cost
+    const updatedActivities = [...activities, activityToAdd];
+    setTrip(prev => prev ? {
+      ...prev,
+      budget: {
+        ...prev.budget,
+        total: recalculateBudget(updatedActivities)
+      }
+    } : prev);
+    
     setAddingActivity(null);
     setNewActivity({
       title: '',
@@ -509,7 +542,22 @@ const ItineraryDetailPage = () => {
   };
 
   const handleDeleteActivity = (activityId: number) => {
+    // Get the cost of the activity being deleted
+    const activityToDelete = activities.find(activity => activity.id === activityId);
+    const deletedCost = activityToDelete?.cost || 0;
+    
     setActivities(prev => prev.filter(activity => activity.id !== activityId));
+    
+    // Update trip budget by recalculating from remaining activities
+    const updatedActivities = activities.filter(activity => activity.id !== activityId);
+    setTrip(prev => prev ? {
+      ...prev,
+      budget: {
+        ...prev.budget,
+        total: recalculateBudget(updatedActivities)
+      }
+    } : prev);
+    
     setShowDeleteConfirm(null);
     setHasUnsavedChanges(true);
   };
