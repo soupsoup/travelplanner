@@ -173,6 +173,7 @@ const ItineraryDetailPage = () => {
     if (!trip || !mounted || isSaving) return;
     
     setIsSaving(true);
+    const failedActivities = [];
     try {
       console.log('Starting trip save...', { tripId: trip.id, activitiesCount: activities.length });
       
@@ -207,8 +208,56 @@ const ItineraryDetailPage = () => {
       
       console.log('Trip updated successfully');
       
+      // First, get the current activities from the database to identify deletions
+      let currentDatabaseActivities = [];
+      try {
+        const currentResponse = await fetch(`/api/trips/${trip.id}`);
+        if (currentResponse.ok) {
+          const currentResult = await currentResponse.json();
+          if (currentResult.success) {
+            currentDatabaseActivities = currentResult.data.activities || [];
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch current activities for deletion check:', error);
+      }
+      
+      // Identify activities that were deleted (in database but not in current state)
+      const currentActivityIds = new Set(activities.map(a => a.id).filter(id => typeof id === 'number' && id > 0));
+      const deletedActivityIds = currentDatabaseActivities
+        .filter(dbActivity => !currentActivityIds.has(dbActivity.id))
+        .map(dbActivity => dbActivity.id);
+      
+      // Delete activities that were removed
+      for (const activityId of deletedActivityIds) {
+        try {
+          console.log('Deleting activity from database:', activityId);
+          const deleteResponse = await fetch(`/api/activities/${activityId}`, {
+            method: 'DELETE',
+          });
+          
+          if (!deleteResponse.ok) {
+            const errorText = await deleteResponse.text();
+            console.error('Activity deletion failed:', activityId, deleteResponse.status, errorText);
+            failedActivities.push(`Activity ID ${activityId} (deletion failed: ${deleteResponse.status})`);
+            continue;
+          }
+          
+          const deleteResult = await deleteResponse.json();
+          if (!deleteResult.success) {
+            console.error('Activity deletion API error:', activityId, deleteResult.error);
+            failedActivities.push(`Activity ID ${activityId} (${deleteResult.error})`);
+            continue;
+          }
+          
+          console.log('Activity deleted successfully:', activityId);
+        } catch (error) {
+          console.error('Activity deletion error:', activityId, error);
+          failedActivities.push(`Activity ID ${activityId} (${error.message})`);
+        }
+      }
+      
       // Update activities in database
-      const failedActivities = [];
       let savedActivitiesCount = 0;
       
       for (const activity of activities) {
@@ -296,36 +345,19 @@ const ItineraryDetailPage = () => {
       if (failedActivities.length === 0) {
         console.log(`Trip and all ${savedActivitiesCount} activities saved successfully`);
         
-        // Reload trip data to ensure consistency
-        try {
-          const reloadResponse = await fetch(`/api/trips/${trip.id}`);
-          if (reloadResponse.ok) {
-            const reloadResult = await reloadResponse.json();
-            if (reloadResult.success) {
-              const tripData = reloadResult.data;
-              const freshActivities = tripData.activities || [];
-              
-              // Update local state with fresh data from database
-              setActivities(freshActivities);
-              
-              // Update trip object
-              setTrip(prev => ({
-                ...prev,
-                activities: freshActivities,
-                activitiesCount: freshActivities.length,
-                budget: {
-                  ...prev.budget,
-                  total: freshActivities.reduce((sum: number, activity: any) => sum + (parseFloat(activity.cost) || 0), 0)
-                },
-                updatedAt: new Date().toISOString()
-              }));
-              
-              console.log('Trip data reloaded successfully');
-            }
-          }
-        } catch (reloadError) {
-          console.warn('Failed to reload trip data after save:', reloadError);
-        }
+        // Update trip object with current state (no need to reload since we handled all operations)
+        setTrip(prev => ({
+          ...prev,
+          activities: activities,
+          activitiesCount: activities.length,
+          budget: {
+            ...prev.budget,
+            total: activities.reduce((sum: number, activity: any) => sum + (parseFloat(activity.cost) || 0), 0)
+          },
+          updatedAt: new Date().toISOString()
+        }));
+        
+        console.log('Trip state updated successfully');
         
         alert(`Trip saved successfully! ${savedActivitiesCount} activities updated.`);
         setHasUnsavedChanges(false); // Reset unsaved changes after successful save
