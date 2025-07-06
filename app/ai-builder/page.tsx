@@ -229,6 +229,55 @@ const AIBuilder: React.FC = () => {
     }
   };
 
+  const handleSkipAIGeneration = () => {
+    if (!mounted) {
+      alert('Application not ready. Please try again.');
+      return;
+    }
+
+    // Validate minimum required fields for manual creation
+    if (!formData.destination.trim()) {
+      alert('Please enter a destination before continuing.');
+      return;
+    }
+
+    try {
+      // Calculate trip duration
+      const start = new Date(formData.startDate || new Date().toISOString().split('T')[0]);
+      const end = new Date(formData.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      const daysDiff = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+      // Create basic trip details for manual creation
+      const tripDetails = {
+        destination: formData.destination,
+        days: daysDiff,
+        people: formData.travelers || 1,
+        budget: formData.budget || '$1,000',
+        startDate: formData.startDate || new Date().toISOString().split('T')[0],
+        endDate: formData.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        travelStyle: formData.travelStyle || 'mid-range',
+        groupType: formData.groupType || 'family',
+        interests: formData.interests || [],
+        narrative: formData.narrative || ''
+      };
+
+      // Create a basic blank itinerary structure
+      const blankItinerary = `Trip Overview:\nStart planning your ${daysDiff}-day trip to ${formData.destination}. Add activities, accommodations, and experiences to create your perfect itinerary.\n\n` +
+        Array.from({ length: daysDiff }, (_, i) => `**Day ${i + 1}**\n- Add your first activity for this day\n\n`).join('');
+
+      // Save to localStorage (only if mounted)
+      if (mounted && typeof window !== 'undefined') {
+        localStorage.setItem('tripDetails', JSON.stringify(tripDetails));
+        localStorage.setItem('itinerary', blankItinerary);
+      }
+
+      // Redirect to the itinerary page for manual editing
+      router.push('/itinerary');
+    } catch (error) {
+      console.error('Error creating manual itinerary:', error);
+      alert('Failed to create manual itinerary. Please try again.');
+    }
+  };
 
 
   const isStepValid = () => {
@@ -301,6 +350,24 @@ const AIBuilder: React.FC = () => {
                 <span className="text-xs text-gray-600">
                   {formData.narrative.length} characters
                 </span>
+              </div>
+
+              {/* Skip AI Generation Option */}
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <div className="text-center">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    Prefer to plan manually?
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
+                    Skip the AI generation and create your itinerary from scratch with our enhanced manual planning tools.
+                  </p>
+                  <button
+                    onClick={handleSkipAIGeneration}
+                    className="inline-flex items-center px-6 py-3 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Skip AI Generation & Plan Manually
+                  </button>
+                </div>
               </div>
             </div>
           </div>

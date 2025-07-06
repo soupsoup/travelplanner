@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
       {/* Dashboard Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-6 items-center justify-center mb-12">
+        <div className="flex justify-center mb-12">
           <Link href="/ai-builder" className="group">
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20 text-white px-8 py-6 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
               <div className="flex items-center space-x-4">
@@ -158,21 +158,8 @@ const Dashboard: React.FC = () => {
                   <Plus className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <div className="text-xl font-bold drop-shadow-md">AI Builder</div>
-                  <div className="text-sm text-white/80 drop-shadow-sm">Create with AI assistance</div>
-                </div>
-              </div>
-            </div>
-          </Link>
-          <Link href="/itinerary/new" className="group">
-            <div className="backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20 text-white px-8 py-6 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-2xl shadow-lg">
-                  <Plus className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <div className="text-xl font-bold drop-shadow-md">New Itinerary</div>
-                  <div className="text-sm text-white/80 drop-shadow-sm">Start from scratch</div>
+                  <div className="text-xl font-bold drop-shadow-md">Create New Itinerary</div>
+                  <div className="text-sm text-white/80 drop-shadow-sm">AI-powered or manual planning</div>
                 </div>
               </div>
             </div>
