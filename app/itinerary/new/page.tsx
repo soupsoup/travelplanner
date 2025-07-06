@@ -1,9 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, Users, DollarSign, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar, 
+  MapPin, 
+  Plus, 
+  Minus, 
+  DollarSign, 
+  Clock, 
+  Users, 
+  Save,
+  Link as LinkIcon,
+  Upload,
+  X,
+  Image as ImageIcon,
+  Car,
+  Plane,
+  Hotel,
+  Utensils,
+  Camera,
+  Navigation
+} from 'lucide-react';
 
 interface BudgetCategory {
   accommodation: number;
@@ -23,6 +44,15 @@ interface Activity {
   cost: number;
   type: string;
   tips: string;
+  websiteUrl?: string;
+  photos?: { url: string; name: string; size: number }[];
+  // Transport-specific fields
+  startLocation?: string;
+  endLocation?: string;
+  transportMode?: string;
+  manualDistance?: number;
+  manualTime?: number;
+  googleMapLink?: string;
 }
 
 interface DayItinerary {
@@ -102,20 +132,26 @@ const NewItinerary: React.FC = () => {
   const addActivity = (dayIndex: number) => {
     const newActivity: Activity = {
       id: Date.now().toString(),
-      title: 'New Activity',
+      title: '',
       description: '',
       location: '',
-      time: '10:00 AM',
+      time: '',
       cost: 0,
       type: 'activity',
-      tips: ''
+      tips: '',
+      websiteUrl: '',
+      photos: [],
+      startLocation: '',
+      endLocation: '',
+      transportMode: 'driving',
+      manualDistance: 0,
+      manualTime: 0,
+      googleMapLink: ''
     };
-
-    setItinerary(prev => {
-      const updated = [...prev];
-      updated[dayIndex].activities.push(newActivity);
-      return updated;
-    });
+    
+    const newItinerary = [...itinerary];
+    newItinerary[dayIndex].activities.push(newActivity);
+    setItinerary(newItinerary);
   };
 
   const updateActivity = (dayIndex: number, activityIndex: number, field: string, value: any) => {
@@ -130,11 +166,51 @@ const NewItinerary: React.FC = () => {
   };
 
   const deleteActivity = (dayIndex: number, activityIndex: number) => {
-    setItinerary(prev => {
-      const updated = [...prev];
-      updated[dayIndex].activities.splice(activityIndex, 1);
-      return updated;
+    const newItinerary = [...itinerary];
+    newItinerary[dayIndex].activities.splice(activityIndex, 1);
+    setItinerary(newItinerary);
+  };
+
+  const handlePhotoUpload = (dayIndex: number, activityIndex: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (result) {
+          const newItinerary = [...itinerary];
+          if (!newItinerary[dayIndex].activities[activityIndex].photos) {
+            newItinerary[dayIndex].activities[activityIndex].photos = [];
+          }
+          newItinerary[dayIndex].activities[activityIndex].photos!.push({
+            url: result as string,
+            name: file.name,
+            size: file.size
+          });
+          setItinerary(newItinerary);
+        }
+      };
+      reader.readAsDataURL(file);
     });
+  };
+
+  const handlePhotoRemove = (dayIndex: number, activityIndex: number, photoIndex: number) => {
+    const newItinerary = [...itinerary];
+    if (newItinerary[dayIndex].activities[activityIndex].photos) {
+      newItinerary[dayIndex].activities[activityIndex].photos!.splice(photoIndex, 1);
+      setItinerary(newItinerary);
+    }
+  };
+
+  const formatDuration = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   };
 
   const saveItinerary = () => {
@@ -415,15 +491,97 @@ const NewItinerary: React.FC = () => {
                             </div>
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                <input
-                                  type="text"
-                                  value={activity.location}
-                                  onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'location', e.target.value)}
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+                                <select
+                                  value={activity.type}
+                                  onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'type', e.target.value)}
                                   className="w-full text-sm border border-gray-300 rounded px-3 py-2"
-                                  placeholder="Address or landmark"
-                                />
+                                >
+                                  <option value="activity">Activity</option>
+                                  <option value="accommodation">Accommodation</option>
+                                  <option value="food">Food & Dining</option>
+                                  <option value="transport">Transport</option>
+                                  <option value="shopping">Shopping</option>
+                                  <option value="cultural">Cultural</option>
+                                  <option value="nature">Nature</option>
+                                  <option value="entertainment">Entertainment</option>
+                                </select>
                               </div>
+                              {activity.type === 'transport' ? (
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Location</label>
+                                    <input
+                                      type="text"
+                                      value={activity.startLocation || ''}
+                                      onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'startLocation', e.target.value)}
+                                      className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                      placeholder="Departure location"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">End Location</label>
+                                    <input
+                                      type="text"
+                                      value={activity.endLocation || ''}
+                                      onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'endLocation', e.target.value)}
+                                      className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                      placeholder="Arrival location"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Transport Mode</label>
+                                    <select
+                                      value={activity.transportMode || 'driving'}
+                                      onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'transportMode', e.target.value)}
+                                      className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                    >
+                                      <option value="driving">Driving</option>
+                                      <option value="walking">Walking</option>
+                                      <option value="transit">Public Transit</option>
+                                      <option value="cycling">Cycling</option>
+                                      <option value="flight">Flight</option>
+                                      <option value="train">Train</option>
+                                    </select>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Distance (miles)</label>
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        value={activity.manualDistance || ''}
+                                        onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'manualDistance', parseFloat(e.target.value) || 0)}
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                        placeholder="0.0"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Time (minutes)</label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={activity.manualTime || ''}
+                                        onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'manualTime', parseInt(e.target.value) || 0)}
+                                        className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                        placeholder="0"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                                  <input
+                                    type="text"
+                                    value={activity.location}
+                                    onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'location', e.target.value)}
+                                    className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                    placeholder="Address or landmark"
+                                  />
+                                </div>
+                              )}
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
@@ -445,6 +603,102 @@ const NewItinerary: React.FC = () => {
                                   />
                                 </div>
                               </div>
+                            </div>
+                          </div>
+                          
+                          {/* Enhanced Fields */}
+                          <div className="mt-4 space-y-3">
+                            {/* Website URL */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <LinkIcon className="inline w-4 h-4 mr-1" />
+                                Website URL
+                              </label>
+                              <input
+                                type="url"
+                                value={activity.websiteUrl || ''}
+                                onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'websiteUrl', e.target.value)}
+                                className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                placeholder="https://example.com"
+                              />
+                            </div>
+                            
+                            {/* Google Maps Link for Transport */}
+                            {activity.type === 'transport' && (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  <Navigation className="inline w-4 h-4 mr-1" />
+                                  Google Maps Link (Optional)
+                                </label>
+                                <input
+                                  type="url"
+                                  value={activity.googleMapLink || ''}
+                                  onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'googleMapLink', e.target.value)}
+                                  className="w-full text-sm border border-gray-300 rounded px-3 py-2"
+                                  placeholder="https://maps.google.com/..."
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Tips */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Tips & Notes</label>
+                              <textarea
+                                value={activity.tips}
+                                onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'tips', e.target.value)}
+                                className="w-full text-sm border border-gray-300 rounded px-3 py-2 resize-none"
+                                rows={2}
+                                placeholder="Any tips or notes for this activity..."
+                              />
+                            </div>
+                            
+                            {/* Photos */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Camera className="inline w-4 h-4 mr-1" />
+                                Photos
+                              </label>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept="image/*"
+                                  onChange={(e) => handlePhotoUpload(currentDayIndex, activityIndex, e)}
+                                  className="hidden"
+                                  id={`photo-upload-${activity.id}`}
+                                />
+                                <label
+                                  htmlFor={`photo-upload-${activity.id}`}
+                                  className="flex items-center px-3 py-2 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                                >
+                                  <Upload className="w-4 h-4 mr-2" />
+                                  Upload Photos
+                                </label>
+                                {activity.photos && activity.photos.length > 0 && (
+                                  <span className="text-sm text-gray-600">
+                                    {activity.photos.length} photo{activity.photos.length > 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                              {activity.photos && activity.photos.length > 0 && (
+                                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {activity.photos.map((photo, photoIndex) => (
+                                    <div key={photoIndex} className="relative">
+                                      <img
+                                        src={photo.url}
+                                        alt={photo.name}
+                                        className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                                      />
+                                      <button
+                                        onClick={() => handlePhotoRemove(currentDayIndex, activityIndex, photoIndex)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
