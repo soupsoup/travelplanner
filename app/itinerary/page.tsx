@@ -43,7 +43,9 @@ const ItineraryPage = () => {
     googleMapLink: '',
     manualDistance: 0,
     manualTime: 0,
-    transportMode: 'driving'
+    transportMode: 'driving',
+    websiteUrl: '',
+    photos: []
   });
 
   useEffect(() => {
@@ -242,7 +244,9 @@ const ItineraryPage = () => {
       googleMapLink: '',
       manualDistance: 0,
       manualTime: 0,
-      transportMode: 'driving'
+      transportMode: 'driving',
+      websiteUrl: '',
+      photos: []
     });
   };
 
@@ -270,6 +274,74 @@ const ItineraryPage = () => {
 
   const handleTransportModeChange = (mode: string) => {
     setNewActivity(prev => ({ ...prev, transportMode: mode }));
+  };
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (result) {
+          setNewActivity(prev => ({
+            ...prev,
+            photos: [...prev.photos, {
+              url: result as string,
+              name: file.name,
+              size: file.size
+            }]
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoRemove = (index: number) => {
+    setNewActivity(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleActivityPhotoUpload = (activityId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (result) {
+          setActivities(prev => prev.map(activity => 
+            activity.id === activityId 
+              ? {
+                  ...activity,
+                  photos: [...(activity.photos || []), {
+                    url: result as string,
+                    name: file.name,
+                    size: file.size
+                  }]
+                }
+              : activity
+          ));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleActivityPhotoRemove = (activityId: number, photoIndex: number) => {
+    setActivities(prev => prev.map(activity => 
+      activity.id === activityId 
+        ? {
+            ...activity,
+            photos: (activity.photos || []).filter((_, i) => i !== photoIndex)
+          }
+        : activity
+    ));
   };
 
   const handleSaveNewActivity = () => {
@@ -308,7 +380,9 @@ const ItineraryPage = () => {
       googleMapLink: '',
       manualDistance: 0,
       manualTime: 0,
-      transportMode: 'driving'
+      transportMode: 'driving',
+      websiteUrl: '',
+      photos: []
     });
   };
 
@@ -328,7 +402,9 @@ const ItineraryPage = () => {
       googleMapLink: '',
       manualDistance: 0,
       manualTime: 0,
-      transportMode: 'driving'
+      transportMode: 'driving',
+      websiteUrl: '',
+      photos: []
     });
   };
 
@@ -1649,6 +1725,87 @@ const ItineraryPage = () => {
                             renderFormattedTips(activity, isEditing)
                           )}
                           
+                          {/* Website URL field */}
+                          <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              <Link className="inline w-4 h-4 mr-1" />
+                              Website URL
+                            </label>
+                            {isEditing ? (
+                              <input
+                                type="url"
+                                value={activity.websiteUrl || ''}
+                                onChange={(e) => handleActivityEdit(activity.id, 'websiteUrl', e.target.value)}
+                                placeholder="https://example.com"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            ) : (
+                              activity.websiteUrl && (
+                                <a
+                                  href={activity.websiteUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 underline break-all"
+                                >
+                                  {activity.websiteUrl}
+                                </a>
+                              )
+                            )}
+                          </div>
+                          
+                          {/* Photos field */}
+                          <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              <Camera className="inline w-4 h-4 mr-1" />
+                              Photos
+                            </label>
+                            {isEditing ? (
+                              <div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  onChange={(e) => handleActivityPhotoUpload(activity.id, e)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2"
+                                />
+                                {activity.photos && activity.photos.length > 0 && (
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {activity.photos.map((photo, index) => (
+                                      <div key={index} className="relative">
+                                        <img
+                                          src={photo.url}
+                                          alt={`Photo ${index + 1}`}
+                                          className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                                        />
+                                        <button
+                                          onClick={() => handleActivityPhotoRemove(activity.id, index)}
+                                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              activity.photos && activity.photos.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {activity.photos.map((photo, index) => (
+                                    <div key={index} className="relative">
+                                      <img
+                                        src={photo.url}
+                                        alt={`Photo ${index + 1}`}
+                                        className="w-full h-24 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity cursor-pointer"
+                                        onClick={() => window.open(photo.url, '_blank')}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )
+                            )}
+                          </div>
+                          
                           {/* Google Map Link field for transport activities */}
                           {activity.type === 'transport' && (
                             <div className="mt-4">
@@ -1674,29 +1831,25 @@ const ItineraryPage = () => {
                                   )}
                                 </div>
                               ) : (
-                                <div>
-                                  {activity.googleMapLink ? (
-                                    <div>
-                                      <a
-                                        href={activity.googleMapLink}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:text-blue-800 text-sm break-all"
-                                      >
-                                        {activity.googleMapLink}
-                                      </a>
-                                      {(activity.manualDistance > 0 || activity.manualTime > 0) && (
-                                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                                          {activity.manualDistance > 0 && `${activity.manualDistance} mi`}
-                                          {activity.manualDistance > 0 && activity.manualTime > 0 && ' • '}
-                                          {activity.manualTime > 0 && formatDuration(activity.manualTime)}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-gray-500 text-sm">No Google Map link added</span>
-                                  )}
-                                </div>
+                                activity.googleMapLink && (
+                                  <div>
+                                    <a
+                                      href={activity.googleMapLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 underline break-all"
+                                    >
+                                      {activity.googleMapLink}
+                                    </a>
+                                    {(activity.manualDistance > 0 || activity.manualTime > 0) && (
+                                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                        {activity.manualDistance > 0 && `${activity.manualDistance} mi`}
+                                        {activity.manualDistance > 0 && activity.manualTime > 0 && ' • '}
+                                        {activity.manualTime > 0 && formatDuration(activity.manualTime)}
+                                      </div>
+                                    )}
+                                  </div>
+                                )
                               )}
                             </div>
                           )}
@@ -2062,6 +2215,61 @@ const ItineraryPage = () => {
                            </div>
                          </>
                        )}
+                       
+                       {/* URL Link Field */}
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                           <Link className="inline w-4 h-4 mr-1" />
+                           Website URL (Optional)
+                         </label>
+                         <input
+                           type="url"
+                           value={newActivity.websiteUrl}
+                           onChange={(e) => handleNewActivityChange('websiteUrl', e.target.value)}
+                           placeholder="https://example.com"
+                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
+                         />
+                         <p className="text-xs text-gray-500 mt-1">
+                           Add a website link for more information about this activity.
+                         </p>
+                       </div>
+                       
+                       {/* Photo Upload Field */}
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                           <Camera className="inline w-4 h-4 mr-1" />
+                           Photos (Optional)
+                         </label>
+                         <input
+                           type="file"
+                           accept="image/*"
+                           multiple
+                           onChange={handlePhotoUpload}
+                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-target"
+                         />
+                         <p className="text-xs text-gray-500 mt-1">
+                           Upload photos related to this activity. Multiple files supported.
+                         </p>
+                         {newActivity.photos.length > 0 && (
+                           <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                             {newActivity.photos.map((photo, index) => (
+                               <div key={index} className="relative">
+                                 <img
+                                   src={photo.url}
+                                   alt={`Photo ${index + 1}`}
+                                   className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                                 />
+                                 <button
+                                   onClick={() => handlePhotoRemove(index)}
+                                   className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                 >
+                                   ×
+                                 </button>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+                       </div>
                        
                        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end pt-4 border-t border-blue-200">
                          <button
