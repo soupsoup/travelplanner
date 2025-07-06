@@ -1658,12 +1658,12 @@ const ItineraryPage = () => {
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">{activity.title}</h3>
                               )}
                               
-                              {/* Tags */}
-                              <div className="flex flex-wrap gap-2">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(activity.type)}`}>
+                              {/* Tags - Mobile Optimized */}
+                              <div className="flex flex-wrap gap-2 max-w-full">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getTypeColor(activity.type)}`}>
                                   {activity.type}
                                 </span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(activity.priority)}`}>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getPriorityColor(activity.priority)}`}>
                                   {activity.priority}
                                 </span>
                               </div>
@@ -1868,25 +1868,27 @@ const ItineraryPage = () => {
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-2 w-full">
                                 {/* Move buttons */}
                                 {activity.day > 1 && (
                                   <button
                                     onClick={() => handleMoveActivity(activity.id, 'left')}
-                                    className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target"
+                                    className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target text-sm"
                                     title={`Move to Day ${activity.day - 1}`}
                                   >
                                     <ArrowLeft className="w-4 h-4" />
-                                    <span className="text-sm">Day {activity.day - 1}</span>
+                                    <span className="hidden sm:inline">Day {activity.day - 1}</span>
+                                    <span className="sm:hidden">←</span>
                                   </button>
                                 )}
                                 {activity.day < totalDays && (
                                   <button
                                     onClick={() => handleMoveActivity(activity.id, 'right')}
-                                    className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target"
+                                    className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors touch-target text-sm"
                                     title={`Move to Day ${activity.day + 1}`}
                                   >
-                                    <span className="text-sm">Day {activity.day + 1}</span>
+                                    <span className="hidden sm:inline">Day {activity.day + 1}</span>
+                                    <span className="sm:hidden">→</span>
                                     <ArrowRight className="w-4 h-4" />
                                   </button>
                                 )}
@@ -1895,7 +1897,7 @@ const ItineraryPage = () => {
                                 <button
                                   onClick={() => handleGetAIAdvice(activity.id)}
                                   disabled={gettingAIAdvice === activity.id}
-                                  className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 touch-target"
+                                  className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 touch-target text-sm"
                                   title="Get AI advice for this activity"
                                 >
                                   {gettingAIAdvice === activity.id ? (
@@ -1903,15 +1905,16 @@ const ItineraryPage = () => {
                                   ) : (
                                     <Sparkles className="w-4 h-4" />
                                   )}
-                                  <span className="text-sm">AI Tips</span>
+                                  <span className="hidden sm:inline">AI Tips</span>
+                                  <span className="sm:hidden">AI</span>
                                 </button>
                                 
                                 {/* Edit button */}
                                 <button
                                   onClick={() => setEditingActivity(activity.id)}
-                                  className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors touch-target"
+                                  className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors touch-target text-sm"
                                 >
-                                  <span className="text-sm">Edit</span>
+                                  <span>Edit</span>
                                 </button>
                                 
                                 {/* Delete button */}

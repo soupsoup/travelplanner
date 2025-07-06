@@ -737,66 +737,73 @@ const ItineraryDetailPage = () => {
                               <h3 className="text-lg font-semibold text-gray-900">{activity.title}</h3>
                             )}
                           </div>
-                          <div className="flex items-center space-x-2">
-                            {isEditing ? (
-                              <>
-                                <button
-                                  onClick={() => handleActivitySave(activity.id)}
-                                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => setEditingActivity(null)}
-                                  className="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400"
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                {/* Move buttons */}
-                                {activity.day > 1 && (
+                          <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-2">
+                            {/* Action buttons */}
+                            <div className="flex items-center space-x-2 lg:order-2">
+                              {isEditing ? (
+                                <>
                                   <button
-                                    onClick={() => handleMoveActivity(activity.id, 'left')}
-                                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
-                                    title={`Move to Day ${activity.day - 1}`}
+                                    onClick={() => handleActivitySave(activity.id)}
+                                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 touch-target"
                                   >
-                                    <ArrowLeft className="w-4 h-4" />
+                                    Save
                                   </button>
-                                )}
-                                {activity.day < totalDays && (
                                   <button
-                                    onClick={() => handleMoveActivity(activity.id, 'right')}
-                                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
-                                    title={`Move to Day ${activity.day + 1}`}
+                                    onClick={() => setEditingActivity(null)}
+                                    className="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 touch-target"
                                   >
-                                    <ArrowRight className="w-4 h-4" />
+                                    Cancel
                                   </button>
-                                )}
-                                
-                                <button
-                                  onClick={() => setEditingActivity(activity.id)}
-                                  className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200"
-                                >
-                                  Edit
-                                </button>
-                                
-                                <button
-                                  onClick={() => setShowDeleteConfirm(activity.id)}
-                                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                                  title="Delete activity"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </>
-                            )}
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(activity.type)}`}>
-                              {activity.type}
-                            </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(activity.priority)}`}>
-                              {activity.priority}
-                            </span>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Move buttons */}
+                                  {activity.day > 1 && (
+                                    <button
+                                      onClick={() => handleMoveActivity(activity.id, 'left')}
+                                      className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded touch-target"
+                                      title={`Move to Day ${activity.day - 1}`}
+                                    >
+                                      <ArrowLeft className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  {activity.day < totalDays && (
+                                    <button
+                                      onClick={() => handleMoveActivity(activity.id, 'right')}
+                                      className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded touch-target"
+                                      title={`Move to Day ${activity.day + 1}`}
+                                    >
+                                      <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  
+                                  <button
+                                    onClick={() => setEditingActivity(activity.id)}
+                                    className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200 touch-target"
+                                  >
+                                    Edit
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => setShowDeleteConfirm(activity.id)}
+                                    className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded touch-target"
+                                    title="Delete activity"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                            
+                            {/* Tags - Mobile: Full width, Desktop: Flexible */}
+                            <div className="flex flex-wrap gap-2 lg:order-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(activity.type)}`}>
+                                {activity.type}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(activity.priority)}`}>
+                                {activity.priority}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         
@@ -811,45 +818,51 @@ const ItineraryDetailPage = () => {
                           <p className="text-gray-700 mb-3">{activity.description}</p>
                         )}
                         
-                        <div className="flex items-center space-x-6 text-sm text-gray-500 mb-3">
+                        {/* Activity Details - Mobile: Stacked, Desktop: Horizontal */}
+                        <div className="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:space-x-6 text-sm text-gray-500 mb-3">
+                          {/* Time */}
                           <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4" />
+                            <Clock className="w-4 h-4 flex-shrink-0" />
                             {isEditing ? (
                               <input
                                 type="text"
                                 value={activity.time}
                                 onChange={(e) => handleActivityEdit(activity.id, 'time', e.target.value)}
-                                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
+                                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs flex-1 sm:w-32 touch-target"
                               />
                             ) : (
-                              <span>{activity.time}</span>
+                              <span className="font-medium">{activity.time}</span>
                             )}
                           </div>
+                          
+                          {/* Location */}
                           <div className="flex items-center space-x-1">
-                            <MapPin className="w-4 h-4" />
+                            <MapPin className="w-4 h-4 flex-shrink-0" />
                             {isEditing ? (
                               <input
                                 type="text"
                                 value={activity.location}
                                 onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
-                                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-32"
+                                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs flex-1 sm:w-32 touch-target"
                               />
                             ) : (
-                              <span>{activity.location}</span>
+                              <span className="text-gray-700">{activity.location}</span>
                             )}
                           </div>
+                          
+                          {/* Cost */}
                           <div className="flex items-center space-x-1">
-                            <DollarSign className="w-4 h-4" />
+                            <DollarSign className="w-4 h-4 flex-shrink-0" />
                             {isEditing ? (
                               <input
                                 type="number"
                                 value={activity.cost}
                                 onChange={(e) => handleActivityEdit(activity.id, 'cost', e.target.value)}
-                                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-20"
+                                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-20 touch-target"
                                 min="0"
                               />
                             ) : (
-                              <span>${activity.cost}</span>
+                              <span className="font-medium text-green-600">${activity.cost}</span>
                             )}
                           </div>
                         </div>
