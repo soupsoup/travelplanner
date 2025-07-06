@@ -44,7 +44,12 @@ const ItineraryDetailPage = () => {
     tips: '',
     googleMapLink: '',
     extractedDistance: '',
-    extractedTime: ''
+    extractedTime: '',
+    manualDistance: 0,
+    manualTime: 0,
+    startLocation: '',
+    endLocation: '',
+    transportMode: 'driving'
   });
 
   useEffect(() => {
@@ -145,7 +150,12 @@ const ItineraryDetailPage = () => {
   const handleActivityEdit = (activityId: number, field: string, value: string) => {
     setActivities(prev => prev.map(activity => 
       activity.id === activityId 
-        ? { ...activity, [field]: field === 'cost' ? parseInt(value) || 0 : value }
+        ? { 
+            ...activity, 
+            [field]: field === 'cost' ? parseInt(value) || 0 : 
+                    field === 'manualDistance' ? parseFloat(value) || 0 :
+                    field === 'manualTime' ? parseInt(value) || 0 : value 
+          }
         : activity
     ));
   };
@@ -168,7 +178,12 @@ const ItineraryDetailPage = () => {
       tips: '',
       googleMapLink: '',
       extractedDistance: '',
-      extractedTime: ''
+      extractedTime: '',
+      manualDistance: 0,
+      manualTime: 0,
+      startLocation: '',
+      endLocation: '',
+      transportMode: 'driving'
     });
   };
 
@@ -203,7 +218,12 @@ const ItineraryDetailPage = () => {
       tips: '',
       googleMapLink: '',
       extractedDistance: '',
-      extractedTime: ''
+      extractedTime: '',
+      manualDistance: 0,
+      manualTime: 0,
+      startLocation: '',
+      endLocation: '',
+      transportMode: 'driving'
     });
     
     // Auto-save
@@ -223,7 +243,12 @@ const ItineraryDetailPage = () => {
       tips: '',
       googleMapLink: '',
       extractedDistance: '',
-      extractedTime: ''
+      extractedTime: '',
+      manualDistance: 0,
+      manualTime: 0,
+      startLocation: '',
+      endLocation: '',
+      transportMode: 'driving'
     });
   };
 
@@ -842,20 +867,115 @@ const ItineraryDetailPage = () => {
                             )}
                           </div>
                           
-                          {/* Location */}
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="w-4 h-4 flex-shrink-0" />
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                value={activity.location}
-                                onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
-                                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs flex-1 sm:w-32 touch-target"
-                              />
-                            ) : (
-                              <span className="text-gray-700">{activity.location}</span>
-                            )}
-                          </div>
+                          {/* Location - Different for Transport vs Other Activities */}
+                          {activity.type === 'transport' ? (
+                            <>
+                              <div className="flex items-center space-x-1">
+                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-xs font-medium">From:</span>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={activity.startLocation || ''}
+                                    onChange={(e) => handleActivityEdit(activity.id, 'startLocation', e.target.value)}
+                                    className="bg-white border border-gray-300 rounded px-2 py-1 text-xs flex-1 sm:w-32 touch-target"
+                                    placeholder="Start location"
+                                  />
+                                ) : (
+                                  <span className="text-gray-700">{activity.startLocation || 'Not set'}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Navigation className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-xs font-medium">To:</span>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={activity.endLocation || ''}
+                                    onChange={(e) => handleActivityEdit(activity.id, 'endLocation', e.target.value)}
+                                    className="bg-white border border-gray-300 rounded px-2 py-1 text-xs flex-1 sm:w-32 touch-target"
+                                    placeholder="End location"
+                                  />
+                                ) : (
+                                  <span className="text-gray-700">{activity.endLocation || 'Not set'}</span>
+                                )}
+                              </div>
+                              {/* Transport Mode */}
+                              <div className="flex items-center space-x-1">
+                                <Car className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-xs font-medium">Mode:</span>
+                                {isEditing ? (
+                                  <select
+                                    value={activity.transportMode || 'driving'}
+                                    onChange={(e) => handleActivityEdit(activity.id, 'transportMode', e.target.value)}
+                                    className="bg-white border border-gray-300 rounded px-2 py-1 text-xs touch-target"
+                                  >
+                                    <option value="driving">Driving</option>
+                                    <option value="walking">Walking</option>
+                                    <option value="transit">Transit</option>
+                                    <option value="cycling">Cycling</option>
+                                  </select>
+                                ) : (
+                                  <span className="text-gray-700 capitalize">{activity.transportMode || 'driving'}</span>
+                                )}
+                              </div>
+                              {/* Manual Distance and Time Input for Transport */}
+                              {isEditing && (
+                                <>
+                                  <div className="flex items-center space-x-1">
+                                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                                    <span className="text-xs font-medium">Distance (mi):</span>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      min="0"
+                                      value={activity.manualDistance || ''}
+                                      onChange={(e) => handleActivityEdit(activity.id, 'manualDistance', e.target.value)}
+                                      className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-20 touch-target"
+                                      placeholder="0.0"
+                                    />
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Clock className="w-4 h-4 flex-shrink-0" />
+                                    <span className="text-xs font-medium">Time (min):</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={activity.manualTime || ''}
+                                      onChange={(e) => handleActivityEdit(activity.id, 'manualTime', e.target.value)}
+                                      className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-20 touch-target"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </>
+                              )}
+                              {/* Display Distance and Time for Transport (when not editing) */}
+                              {!isEditing && (activity.manualDistance > 0 || activity.manualTime > 0) && (
+                                <div className="flex items-center space-x-1">
+                                  <Navigation className="w-4 h-4 flex-shrink-0" />
+                                  <span className="text-xs font-medium">
+                                    {activity.manualDistance > 0 && `${activity.manualDistance} mi`}
+                                    {activity.manualDistance > 0 && activity.manualTime > 0 && ' • '}
+                                    {activity.manualTime > 0 && `${activity.manualTime} min`}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex items-center space-x-1">
+                              <MapPin className="w-4 h-4 flex-shrink-0" />
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={activity.location}
+                                  onChange={(e) => handleActivityEdit(activity.id, 'location', e.target.value)}
+                                  className="bg-white border border-gray-300 rounded px-2 py-1 text-xs flex-1 sm:w-32 touch-target"
+                                />
+                              ) : (
+                                <span className="text-gray-700">{activity.location}</span>
+                              )}
+                            </div>
+                          )}
                           
                           {/* Cost */}
                           <div className="flex items-center space-x-1">
@@ -975,6 +1095,72 @@ const ItineraryDetailPage = () => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
+                      
+                      {/* Transport-specific fields */}
+                      {newActivity.type === 'transport' && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Start Location</label>
+                            <input
+                              type="text"
+                              value={newActivity.startLocation || ''}
+                              onChange={(e) => handleNewActivityChange('startLocation', e.target.value)}
+                              placeholder="Starting location"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">End Location</label>
+                            <input
+                              type="text"
+                              value={newActivity.endLocation || ''}
+                              onChange={(e) => handleNewActivityChange('endLocation', e.target.value)}
+                              placeholder="Destination location"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Transport Mode</label>
+                            <select
+                              value={newActivity.transportMode || 'driving'}
+                              onChange={(e) => handleNewActivityChange('transportMode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="driving">Driving</option>
+                              <option value="walking">Walking</option>
+                              <option value="transit">Public Transit</option>
+                              <option value="cycling">Cycling</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Distance (miles)</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={newActivity.manualDistance || ''}
+                              onChange={(e) => handleNewActivityChange('manualDistance', parseFloat(e.target.value) || 0)}
+                              placeholder="0.0"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Travel Time (minutes)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={newActivity.manualTime || ''}
+                              onChange={(e) => handleNewActivityChange('manualTime', parseInt(e.target.value) || 0)}
+                              placeholder="0"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                     
                     <div className="flex items-center justify-end space-x-3 pt-4 border-t border-blue-200 mt-4">
