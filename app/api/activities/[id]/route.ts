@@ -4,10 +4,11 @@ import { getActivityById, updateActivity, deleteActivity } from '@/lib/db/action
 // GET /api/activities/[id] - Get a specific activity
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const activityId = parseInt(params.id);
+    const activityId = parseInt(id);
     
     if (isNaN(activityId)) {
       return NextResponse.json(
@@ -42,10 +43,11 @@ export async function GET(
 // PUT /api/activities/[id] - Update an activity
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const activityId = parseInt(params.id);
+    const activityId = parseInt(id);
     
     if (isNaN(activityId)) {
       return NextResponse.json(
@@ -110,10 +112,11 @@ export async function PUT(
 // DELETE /api/activities/[id] - Delete an activity
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const activityId = parseInt(params.id);
+    const activityId = parseInt(id);
     
     if (isNaN(activityId)) {
       return NextResponse.json(

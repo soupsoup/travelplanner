@@ -4,10 +4,11 @@ import { getTripWithActivities, updateTrip, deleteTrip } from '@/lib/db/actions'
 // GET /api/trips/[id] - Get a specific trip with activities
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const tripId = params.id;
+    const tripId = id;
     
     const result = await getTripWithActivities(tripId);
     
@@ -35,10 +36,11 @@ export async function GET(
 // PUT /api/trips/[id] - Update a trip
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const tripId = params.id;
+    const tripId = id;
     const body = await request.json();
     
     // Extract updateable fields
@@ -87,10 +89,11 @@ export async function PUT(
 // DELETE /api/trips/[id] - Delete a trip
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const tripId = params.id;
+    const tripId = id;
     
     const result = await deleteTrip(tripId);
     
