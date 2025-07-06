@@ -213,11 +213,11 @@ const ItineraryDetailPage = () => {
       
       for (const activity of activities) {
         try {
-          // Consider an activity new if it has no id, id is not a number, or id <= 0
+          // Consider an activity new if it has no id, id is not a number, or id <= 0 (including negative temp IDs)
           const isExistingDatabaseActivity = typeof activity.id === 'number' && activity.id > 0;
           
           if (isExistingDatabaseActivity) {
-            // Update existing database activity
+            // Update existing database activity (positive ID from database)
             console.log('Updating existing database activity:', activity.id, activity.title);
             const activityResponse = await fetch(`/api/activities/${activity.id}`, {
               method: 'PUT',
@@ -243,8 +243,8 @@ const ItineraryDetailPage = () => {
             
             savedActivitiesCount++;
           } else {
-            // Create new activity (no id or id <= 0)
-            console.log('Creating new activity:', activity.title);
+            // Create new activity (no id, id <= 0, or negative temp ID)
+            console.log('Creating new activity:', activity.title, '(temp ID:', activity.id, ')');
             const activityResponse = await fetch('/api/activities', {
               method: 'POST',
               headers: {
@@ -273,7 +273,7 @@ const ItineraryDetailPage = () => {
             // Update the activity with the new ID from database
             const newId = activityResult.data.id;
             setActivities(prev => prev.map(a => 
-              a.title === activity.title && a.day === activity.day && a.id === activity.id
+              a.id === activity.id  // Match by temp ID (which is unique)
                 ? { ...a, id: newId }
                 : a
             ));
@@ -417,12 +417,13 @@ const ItineraryDetailPage = () => {
   const handleSaveNewActivity = () => {
     if (!mounted || !newActivity.title.trim()) return;
     
-    const nextId = activities.length > 0 ? Math.max(...activities.map(a => a.id), 0) + 1 : 1000;
+    // Use a negative ID to mark this as a new activity (not yet in database)
+    const tempId = -(Date.now() + Math.random());
     const activityToAdd = {
       ...newActivity,
-      id: nextId,
+      id: tempId,
       day: addingActivity,
-      cost: newActivity.cost || generateEstimatedCost(newActivity.type, nextId)
+      cost: newActivity.cost || generateEstimatedCost(newActivity.type, Math.abs(tempId))
     };
     
     setActivities(prev => [...prev, activityToAdd]);

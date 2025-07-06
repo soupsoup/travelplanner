@@ -381,13 +381,13 @@ const ItineraryPage = () => {
   const handleSaveNewActivity = () => {
     if (!mounted || !newActivity.title.trim()) return;
     
-    // Generate deterministic ID to prevent hydration errors
-    const nextId = activities.length > 0 ? Math.max(...activities.map(a => a.id), 0) + 1 : 1000;
+    // Generate temporary negative ID to mark as new activity
+    const tempId = -(Date.now() + Math.random());
     const activityToAdd = {
       ...newActivity,
-      id: nextId,
+      id: tempId,
       day: addingActivity,
-      cost: newActivity.cost || generateEstimatedCost(newActivity.type, nextId)
+      cost: newActivity.cost || generateEstimatedCost(newActivity.type, Math.abs(tempId))
     };
     
     setActivities(prev => [...prev, activityToAdd]);
