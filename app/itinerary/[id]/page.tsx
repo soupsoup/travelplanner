@@ -213,10 +213,8 @@ const ItineraryDetailPage = () => {
       
       for (const activity of activities) {
         try {
-          // Check if this is a real database activity (has a valid database ID)
-          // Database activities come from the server and have real IDs
-          // Temporary local activities have IDs >= 1000 or no ID
-          const isExistingDatabaseActivity = activity.id && activity.id < 1000;
+          // Consider an activity new if it has no id, id is not a number, or id <= 0
+          const isExistingDatabaseActivity = typeof activity.id === 'number' && activity.id > 0;
           
           if (isExistingDatabaseActivity) {
             // Update existing database activity
@@ -245,7 +243,7 @@ const ItineraryDetailPage = () => {
             
             savedActivitiesCount++;
           } else {
-            // Create new activity (temporary local activity or no ID)
+            // Create new activity (no id or id <= 0)
             console.log('Creating new activity:', activity.title);
             const activityResponse = await fetch('/api/activities', {
               method: 'POST',
