@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Calendar, MapPin, DollarSign, Clock, Star, Users, Bookmark, Hotel, Utensils, Camera, Car, Plane, Link, Trash2, ArrowRight, ArrowLeft, MessageSquare, Sparkles, Image, Save, Navigation, Plus, FileText, Download, ChevronLeft, Menu, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, DollarSign, Clock, Users, Plus, Trash2, Edit, X, Menu, Car, Utensils, Camera, Plane, Building, ShoppingBag, Trees, Star, Navigation, Link, ExternalLink, FileText, Import, Save, Hotel, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { extractTimeAndDistance, isValidGoogleMapLink } from '../../../lib/mapUtils';
 import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../../lib/timeUtils';
 
@@ -60,6 +60,7 @@ const ItineraryDetailPage = () => {
     tripName: ''
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -167,9 +168,12 @@ const ItineraryDetailPage = () => {
   };
 
   const saveTrip = async () => {
-    if (!trip || !mounted) return;
+    if (!trip || !mounted || isSaving) return;
     
+    setIsSaving(true);
     try {
+      console.log('Starting trip save...', { tripId: trip.id, activitiesCount: activities.length });
+      
       // Update trip in database
       const tripUpdate = {
         name: tripName,
@@ -187,46 +191,93 @@ const ItineraryDetailPage = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update trip');
+        const errorText = await response.text();
+        console.error('Trip update failed:', response.status, errorText);
+        throw new Error(`Failed to update trip (${response.status}): ${errorText}`);
       }
       
       const result = await response.json();
       
       if (!result.success) {
+        console.error('Trip update API error:', result.error);
         throw new Error(result.error || 'Failed to update trip');
       }
       
+      console.log('Trip updated successfully');
+      
       // Update activities in database
+      const failedActivities = [];
+      let savedActivitiesCount = 0;
+      
       for (const activity of activities) {
-        if (activity.id) {
-          // Update existing activity
-          const activityResponse = await fetch(`/api/activities/${activity.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(activity)
-          });
-          
-          if (!activityResponse.ok) {
-            console.error('Failed to update activity:', activity.id);
+        try {
+          if (activity.id && activity.id >= 1000) {
+            // Update existing activity
+            console.log('Updating activity:', activity.id, activity.title);
+            const activityResponse = await fetch(`/api/activities/${activity.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(activity)
+            });
+            
+            if (!activityResponse.ok) {
+              const errorText = await activityResponse.text();
+              console.error('Activity update failed:', activity.id, activityResponse.status, errorText);
+              failedActivities.push(`${activity.title} (update failed: ${activityResponse.status})`);
+              continue;
+            }
+            
+            const activityResult = await activityResponse.json();
+            if (!activityResult.success) {
+              console.error('Activity update API error:', activity.id, activityResult.error);
+              failedActivities.push(`${activity.title} (${activityResult.error})`);
+              continue;
+            }
+            
+            savedActivitiesCount++;
+          } else {
+            // Create new activity
+            console.log('Creating new activity:', activity.title);
+            const activityResponse = await fetch('/api/activities', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...activity,
+                tripId: trip.id
+              })
+            });
+            
+            if (!activityResponse.ok) {
+              const errorText = await activityResponse.text();
+              console.error('Activity creation failed:', activity.title, activityResponse.status, errorText);
+              failedActivities.push(`${activity.title} (creation failed: ${activityResponse.status})`);
+              continue;
+            }
+            
+            const activityResult = await activityResponse.json();
+            if (!activityResult.success) {
+              console.error('Activity creation API error:', activity.title, activityResult.error);
+              failedActivities.push(`${activity.title} (${activityResult.error})`);
+              continue;
+            }
+            
+            // Update the activity with the new ID from database
+            const newId = activityResult.data.id;
+            setActivities(prev => prev.map(a => 
+              a.title === activity.title && a.day === activity.day 
+                ? { ...a, id: newId }
+                : a
+            ));
+            
+            savedActivitiesCount++;
           }
-        } else {
-          // Create new activity
-          const activityResponse = await fetch('/api/activities', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              ...activity,
-              tripId: trip.id
-            })
-          });
-          
-          if (!activityResponse.ok) {
-            console.error('Failed to create activity:', activity.title);
-          }
+        } catch (error) {
+          console.error('Activity save error:', activity.title, error);
+          failedActivities.push(`${activity.title} (${error.message})`);
         }
       }
       
@@ -246,15 +297,41 @@ const ItineraryDetailPage = () => {
         updatedAt: new Date().toISOString()
       }));
       
-      alert('Trip updated successfully!');
+      // Provide user feedback
+      if (failedActivities.length === 0) {
+        console.log(`Trip and all ${savedActivitiesCount} activities saved successfully`);
+        alert(`Trip saved successfully! ${savedActivitiesCount} activities updated.`);
+      } else {
+        console.warn(`Partial save: ${savedActivitiesCount} activities saved, ${failedActivities.length} failed`);
+        alert(
+          `Trip saved with some issues:\n` +
+          `✓ ${savedActivitiesCount} activities saved successfully\n` +
+          `✗ ${failedActivities.length} activities failed:\n` +
+          failedActivities.slice(0, 3).join('\n') +
+          (failedActivities.length > 3 ? `\n... and ${failedActivities.length - 3} more` : '') +
+          `\n\nPlease try editing and saving the failed activities again.`
+        );
+      }
     } catch (error) {
       console.error('Error saving trip:', error);
       
       if (error instanceof Error) {
-        alert(`Save failed: ${error.message}. Please try again.`);
+        if (error.message.includes('fetch')) {
+          alert(`Network error: Unable to connect to server. Please check your internet connection and try again.`);
+        } else if (error.message.includes('400')) {
+          alert(`Invalid data: ${error.message}. Please check your inputs and try again.`);
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+          alert(`Authentication error: Please refresh the page and try again.`);
+        } else if (error.message.includes('500')) {
+          alert(`Server error: ${error.message}. Please try again in a moment.`);
+        } else {
+          alert(`Save failed: ${error.message}. Please try again.`);
+        }
       } else {
-        alert('Failed to save trip changes.');
+        alert('Failed to save trip changes. Please try again.');
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -675,6 +752,36 @@ const ItineraryDetailPage = () => {
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
+          </div>
+
+          {/* Manual Save Button */}
+          <div className="p-6 border-b">
+            <button
+              onClick={saveTrip}
+              disabled={isSaving}
+              className={`w-full flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors ${
+                isSaving 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </button>
+            {isSaving && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Saving your trip and activities to database...
+              </p>
+            )}
           </div>
 
           {/* Trip Info */}
