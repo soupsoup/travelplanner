@@ -175,7 +175,7 @@ const AIBuilder: React.FC = () => {
             daysCount: data.tripDetails.days,
             travelers: data.tripDetails.people,
             status: 'planning',
-            overview: data.itinerary
+            overview: data.overview || data.itinerary
           };
 
           // Parse activities from the itinerary if they exist
