@@ -5,9 +5,6 @@ import Anthropic from '@anthropic-ai/sdk';
 function parseAIItinerary(text: string, destination: string, totalDays: number) {
   if (!text) return { activities: [], overview: '' };
   
-  console.log('Parsing AI response, length:', text.length);
-  console.log('First 500 chars:', text.substring(0, 500));
-  
   const activities = [];
   let activityId = 1;
   let overview = '';
@@ -16,9 +13,7 @@ function parseAIItinerary(text: string, destination: string, totalDays: number) 
   const overviewMatch = text.match(/\*\*Trip Overview:\*\*\s*([^*]+?)(?=\*\*|$)/i);
   if (overviewMatch) {
     overview = overviewMatch[1].trim();
-    console.log('Found overview:', overview.substring(0, 200) + '...');
   } else {
-    console.log('No overview found with pattern');
     // Try alternative overview extraction
     const lines = text.split('\n');
     const overviewLines = [];
@@ -39,21 +34,15 @@ function parseAIItinerary(text: string, destination: string, totalDays: number) 
   // Find all day sections using a more specific pattern
   const dayPattern = /\*\*Day\s+(\d+)[^*]*\*\*:\s*\n?(.*?)(?=\*\*Day\s+\d+|\*\*Budget|$)/gi;
   let dayMatch;
-  let dayCount = 0;
   
   while ((dayMatch = dayPattern.exec(text)) !== null) {
     const dayNumber = parseInt(dayMatch[1]);
     const dayContent = dayMatch[2];
-    dayCount++;
-    
-    console.log(`Found Day ${dayNumber}, content length:`, dayContent.length);
     
     if (dayNumber <= totalDays) {
       // Parse activities from this day's content
       const dayActivities = parseActivitiesFromDayContent(dayContent, dayNumber, destination);
       activities.push(...dayActivities);
-      
-      console.log(`Parsed ${dayActivities.length} activities for Day ${dayNumber}`);
       
       // Update activity IDs
       dayActivities.forEach(activity => {
@@ -62,14 +51,10 @@ function parseAIItinerary(text: string, destination: string, totalDays: number) 
     }
   }
   
-  console.log(`Total days found: ${dayCount}, total activities: ${activities.length}`);
-  
   // If no structured days found, try alternative parsing
   if (activities.length === 0) {
-    console.log('No activities found, trying alternative parsing...');
     const alternativeActivities = parseAlternativeFormat(text, destination, totalDays);
     activities.push(...alternativeActivities);
-    console.log(`Alternative parsing found ${alternativeActivities.length} activities`);
   }
   
   return { activities, overview };
@@ -78,20 +63,14 @@ function parseAIItinerary(text: string, destination: string, totalDays: number) 
 function parseActivitiesFromDayContent(dayContent: string, day: number, destination: string) {
   const activities = [];
   
-  console.log(`Parsing day ${day} content:`, dayContent.substring(0, 300) + '...');
-  
   // Look for time-based activities: Morning: Activity - Description
   const timePattern = /(Morning|Afternoon|Evening|Night):\s*([^-\n]+)\s*-\s*([^\n]+)/gi;
   let timeMatch;
-  let matchCount = 0;
   
   while ((timeMatch = timePattern.exec(dayContent)) !== null) {
     const timeOfDay = timeMatch[1];
     const activityTitle = timeMatch[2].trim();
     const activityDescription = timeMatch[3].trim();
-    matchCount++;
-    
-    console.log(`Found ${timeOfDay} activity: "${activityTitle}" - "${activityDescription.substring(0, 50)}..."`);
     
     if (activityTitle.length > 3) {
       const activity = {
@@ -109,8 +88,6 @@ function parseActivitiesFromDayContent(dayContent: string, day: number, destinat
       activities.push(activity);
     }
   }
-  
-  console.log(`Day ${day}: Found ${matchCount} time matches, created ${activities.length} activities`);
   
   return activities;
 }
