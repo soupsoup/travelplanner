@@ -62,6 +62,7 @@ const ItineraryDetailPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCleaningDuplicates, setIsCleaningDuplicates] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -329,6 +330,7 @@ const ItineraryDetailPage = () => {
         }
         
         alert(`Trip saved successfully! ${savedActivitiesCount} activities updated.`);
+        setHasUnsavedChanges(false); // Reset unsaved changes after successful save
       } else {
         console.warn(`Partial save: ${savedActivitiesCount} activities saved, ${failedActivities.length} failed`);
         alert(
@@ -339,6 +341,7 @@ const ItineraryDetailPage = () => {
           (failedActivities.length > 3 ? `\n... and ${failedActivities.length - 3} more` : '') +
           `\n\nPlease try editing and saving the failed activities again.`
         );
+        // Don't reset hasUnsavedChanges if there were failures
       }
     } catch (error) {
       console.error('Error saving trip:', error);
@@ -374,6 +377,7 @@ const ItineraryDetailPage = () => {
           }
         : activity
     ));
+    setHasUnsavedChanges(true);
   };
 
   const handleActivitySave = (activityId: number) => {
@@ -446,8 +450,7 @@ const ItineraryDetailPage = () => {
       photos: []
     });
     
-    // Auto-save
-    setTimeout(() => saveTrip(), 100);
+    setHasUnsavedChanges(true);
   };
 
   const handleCancelNewActivity = () => {
@@ -477,7 +480,7 @@ const ItineraryDetailPage = () => {
   const handleDeleteActivity = (activityId: number) => {
     setActivities(prev => prev.filter(activity => activity.id !== activityId));
     setShowDeleteConfirm(null);
-    setTimeout(() => saveTrip(), 100);
+    setHasUnsavedChanges(true);
   };
 
   const handleMoveActivity = (activityId: number, direction: 'left' | 'right') => {
@@ -492,13 +495,13 @@ const ItineraryDetailPage = () => {
       a.id === activityId ? { ...a, day: newDay } : a
     ));
     
-    setTimeout(() => saveTrip(), 100);
+    setHasUnsavedChanges(true);
   };
 
   const handleAddDay = () => {
     const newDayCount = totalDays + 1;
     setTotalDays(newDayCount);
-    setTimeout(() => saveTrip(), 100);
+    setHasUnsavedChanges(true);
   };
 
   const handleRemoveDay = () => {
@@ -521,7 +524,7 @@ const ItineraryDetailPage = () => {
       setSelectedDay(newDayCount);
     }
     
-    setTimeout(() => saveTrip(), 100);
+    setHasUnsavedChanges(true);
   };
 
   const handleEditOverview = () => {
@@ -532,7 +535,7 @@ const ItineraryDetailPage = () => {
   const handleSaveOverview = () => {
     setTripOverview(tempOverview);
     setEditingOverview(false);
-    setTimeout(() => saveTrip(), 100);
+    setHasUnsavedChanges(true);
   };
 
   const handleCancelOverviewEdit = () => {
@@ -816,11 +819,13 @@ const ItineraryDetailPage = () => {
           <div className="p-6 border-b">
             <button
               onClick={saveTrip}
-              disabled={isSaving}
+              disabled={isSaving || !hasUnsavedChanges}
               className={`w-full flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors mb-3 ${
                 isSaving 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  : hasUnsavedChanges
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
               {isSaving ? (
@@ -831,7 +836,7 @@ const ItineraryDetailPage = () => {
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  {hasUnsavedChanges ? 'Save Changes' : 'All Changes Saved'}
                 </>
               )}
             </button>
@@ -868,6 +873,12 @@ const ItineraryDetailPage = () => {
             {isCleaningDuplicates && (
               <p className="text-xs text-gray-500 mt-2 text-center">
                 Detecting and removing duplicate activities...
+              </p>
+            )}
+            
+            {hasUnsavedChanges && !isSaving && (
+              <p className="text-xs text-orange-600 mt-2 text-center font-medium">
+                ⚠️ You have unsaved changes
               </p>
             )}
           </div>
