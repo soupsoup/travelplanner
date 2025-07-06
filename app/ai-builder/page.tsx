@@ -256,10 +256,12 @@ const AIBuilder: React.FC = () => {
       case 'destination':
         return (
           <div className="space-y-8">
-            <div className="text-center">
-              <MapPin className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-blue-800 mb-2">Tell us about your dream trip</h2>
-              <p className="text-gray-600">The more details you share, the better we can personalize your itinerary</p>
+            <div className="text-center mb-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <MapPin className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Tell us about your dream trip</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">The more details you share, the better we can personalize your perfect itinerary</p>
             </div>
             
             <div className="max-w-4xl mx-auto space-y-6">
@@ -307,10 +309,12 @@ const AIBuilder: React.FC = () => {
       case 'travel-details':
         return (
           <div className="space-y-8">
-            <div className="text-center">
-              <Calendar className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-blue-800 mb-2">Travel Details</h2>
-              <p className="text-gray-600">When and with whom are you traveling?</p>
+            <div className="text-center mb-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Calendar className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Travel Details</h2>
+              <p className="text-lg text-gray-600">When and with whom are you traveling?</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
               <div>
@@ -362,10 +366,12 @@ const AIBuilder: React.FC = () => {
       case 'preferences':
         return (
           <div className="space-y-8">
-            <div className="text-center">
-              <Heart className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-blue-800 mb-2">What interests you?</h2>
-              <p className="text-gray-600">Select all that apply</p>
+            <div className="text-center mb-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Heart className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">What interests you?</h2>
+              <p className="text-lg text-gray-600">Select all that apply to personalize your experience</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
               {interests.map((interest) => {
@@ -397,10 +403,12 @@ const AIBuilder: React.FC = () => {
       case 'style':
         return (
           <div className="space-y-8">
-            <div className="text-center">
-              <Sparkles className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-blue-800 mb-2">Your Travel Style</h2>
-              <p className="text-gray-600">Help us customize your perfect trip</p>
+            <div className="text-center mb-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Sparkles className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Your Travel Style</h2>
+              <p className="text-lg text-gray-600">Help us customize your perfect trip experience</p>
             </div>
             
             <div className="max-w-4xl mx-auto space-y-8">
@@ -476,10 +484,12 @@ const AIBuilder: React.FC = () => {
       case 'review':
         return (
           <div className="space-y-8">
-            <div className="text-center">
-              <Sparkles className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-blue-800 mb-2">Ready to create magic?</h2>
-              <p className="text-gray-600">Review your preferences and let AI craft your perfect itinerary</p>
+            <div className="text-center mb-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Sparkles className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Ready to create magic?</h2>
+              <p className="text-lg text-gray-600">Review your preferences and let AI craft your perfect itinerary</p>
             </div>
             
             <div className="max-w-2xl mx-auto space-y-6">
@@ -544,16 +554,16 @@ const AIBuilder: React.FC = () => {
               <button
                 onClick={handleGenerateItinerary}
                 disabled={isGenerating}
-                className="btn-secondary w-full mt-6 py-4 text-lg"
+                className="w-full mt-6 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                     Crafting your perfect itinerary...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 mr-2" />
+                    <Sparkles className="h-5 w-5 mr-3" />
                     Generate My Itinerary
                   </span>
                 )}
@@ -568,30 +578,65 @@ const AIBuilder: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Progress Bar */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <a
-                href="/"
-                className="flex items-center space-x-2 text-gray-600 hover:text-blue-800 transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="text-sm font-medium">Home</span>
-              </a>
-              <h1 className="text-xl font-bold text-blue-800">AI Trip Builder</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Elegant Header */}
+      <div className="bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            {/* Header Content */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-6">
+                <a
+                  href="/"
+                  className="flex items-center space-x-2 text-gray-500 hover:text-blue-600 transition-colors group"
+                >
+                  <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                  <span className="text-sm font-medium">Home</span>
+                </a>
+                <div className="h-6 w-px bg-gray-300"></div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">AI Trip Builder</h1>
+                  <p className="text-sm text-gray-600 mt-1">{steps[currentStep].description}</p>
+                </div>
+              </div>
+              
+              {/* Step Indicator */}
+              <div className="hidden sm:flex items-center space-x-3">
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-900">
+                    Step {currentStep + 1} of {steps.length}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {steps[currentStep].title}
+                  </div>
+                </div>
+                <div className="w-24 bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
-                {currentStep + 1} of {steps.length}
-              </span>
-              <div className="w-32 bg-gray-200 rounded-full h-2">
+            
+            {/* Mobile Progress Bar */}
+            <div className="sm:hidden">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-900">
+                  Step {currentStep + 1} of {steps.length}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {Math.round(((currentStep + 1) / steps.length) * 100)}% Complete
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
-                  className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
                 ></div>
+              </div>
+              <div className="text-xs text-gray-600 mt-2">
+                {steps[currentStep].title}
               </div>
             </div>
           </div>
@@ -599,32 +644,35 @@ const AIBuilder: React.FC = () => {
       </div>
 
       {/* Step Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="min-h-96">
-          {renderStepContent()}
-        </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Step Content Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 lg:p-12 min-h-[600px] flex flex-col">
+          <div className="flex-1">
+            {renderStepContent()}
+          </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between items-center mt-12">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStep === 0}
-            className="btn-outline disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Previous
-          </button>
-          
-          {currentStep < steps.length - 1 ? (
+          {/* Navigation */}
+          <div className="flex justify-between items-center mt-8 pt-8 border-t border-gray-100">
             <button
-              onClick={handleNext}
-              disabled={!isStepValid()}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handlePrevious}
+              disabled={currentStep === 0}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Next
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Previous
             </button>
-          ) : null}
+            
+            {currentStep < steps.length - 1 ? (
+              <button
+                onClick={handleNext}
+                disabled={!isStepValid()}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                Next
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
