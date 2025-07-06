@@ -1677,6 +1677,40 @@ const ItineraryDetailPage = () => {
           </div>
         </div>
       )}
+
+      {/* Activity Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-4">Delete Activity</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Are you sure you want to delete this activity? 
+              This action cannot be undone and will permanently remove the activity from your itinerary.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (showDeleteConfirm) {
+                    handleDeleteActivity(showDeleteConfirm);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+              >
+                Delete Activity
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
