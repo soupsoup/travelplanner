@@ -61,6 +61,7 @@ const ItineraryDetailPage = () => {
   });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCleaningDuplicates, setIsCleaningDuplicates] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -211,9 +212,14 @@ const ItineraryDetailPage = () => {
       
       for (const activity of activities) {
         try {
-          if (activity.id && activity.id >= 1000) {
-            // Update existing activity
-            console.log('Updating activity:', activity.id, activity.title);
+          // Check if this is a real database activity (has a valid database ID)
+          // Database activities come from the server and have real IDs
+          // Temporary local activities have IDs >= 1000 or no ID
+          const isExistingDatabaseActivity = activity.id && activity.id < 1000;
+          
+          if (isExistingDatabaseActivity) {
+            // Update existing database activity
+            console.log('Updating existing database activity:', activity.id, activity.title);
             const activityResponse = await fetch(`/api/activities/${activity.id}`, {
               method: 'PUT',
               headers: {
@@ -238,7 +244,7 @@ const ItineraryDetailPage = () => {
             
             savedActivitiesCount++;
           } else {
-            // Create new activity
+            // Create new activity (temporary local activity or no ID)
             console.log('Creating new activity:', activity.title);
             const activityResponse = await fetch('/api/activities', {
               method: 'POST',
@@ -268,7 +274,7 @@ const ItineraryDetailPage = () => {
             // Update the activity with the new ID from database
             const newId = activityResult.data.id;
             setActivities(prev => prev.map(a => 
-              a.title === activity.title && a.day === activity.day 
+              a.title === activity.title && a.day === activity.day && a.id === activity.id
                 ? { ...a, id: newId }
                 : a
             ));
@@ -281,25 +287,47 @@ const ItineraryDetailPage = () => {
         }
       }
       
-      // Update local state
-      setTrip(prev => ({
-        ...prev,
-        name: tripName,
-        overview: tripOverview,
-        daysCount: totalDays,
-        image: tripImage,
-        activities: activities,
-        activitiesCount: activities.length,
-        budget: {
-          ...prev.budget,
-          total: activities.reduce((sum, activity) => sum + (parseFloat(activity.cost) || 0), 0)
-        },
-        updatedAt: new Date().toISOString()
-      }));
+      // Update trip info (name, overview, days) in local state
+      setTripName(tripName);
+      setTripOverview(tripOverview);
+      setTotalDays(totalDays);
+      setTripImage(tripImage);
       
       // Provide user feedback
       if (failedActivities.length === 0) {
         console.log(`Trip and all ${savedActivitiesCount} activities saved successfully`);
+        
+        // Reload trip data to ensure consistency
+        try {
+          const reloadResponse = await fetch(`/api/trips/${trip.id}`);
+          if (reloadResponse.ok) {
+            const reloadResult = await reloadResponse.json();
+            if (reloadResult.success) {
+              const tripData = reloadResult.data;
+              const freshActivities = tripData.activities || [];
+              
+              // Update local state with fresh data from database
+              setActivities(freshActivities);
+              
+              // Update trip object
+              setTrip(prev => ({
+                ...prev,
+                activities: freshActivities,
+                activitiesCount: freshActivities.length,
+                budget: {
+                  ...prev.budget,
+                  total: freshActivities.reduce((sum: number, activity: any) => sum + (parseFloat(activity.cost) || 0), 0)
+                },
+                updatedAt: new Date().toISOString()
+              }));
+              
+              console.log('Trip data reloaded successfully');
+            }
+          }
+        } catch (reloadError) {
+          console.warn('Failed to reload trip data after save:', reloadError);
+        }
+        
         alert(`Trip saved successfully! ${savedActivitiesCount} activities updated.`);
       } else {
         console.warn(`Partial save: ${savedActivitiesCount} activities saved, ${failedActivities.length} failed`);
@@ -678,6 +706,36 @@ const ItineraryDetailPage = () => {
     });
   };
 
+  const cleanupDuplicates = async () => {
+    if (!trip || isCleaningDuplicates) return;
+    
+    setIsCleaningDuplicates(true);
+    try {
+      const response = await fetch(`/api/trips/${trip.id}/cleanup-duplicates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`✅ Cleanup complete!\n\n${result.message}\n\nThe page will reload to show the updated activities.`);
+        
+        // Reload the page to show fresh data
+        window.location.reload();
+      } else {
+        alert(`❌ Cleanup failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error cleaning duplicates:', error);
+      alert('❌ Failed to clean up duplicates. Please try again.');
+    } finally {
+      setIsCleaningDuplicates(false);
+    }
+  };
+
   // Don't render until mounted to prevent SSR issues
   if (!mounted || loading) {
     return (
@@ -759,7 +817,7 @@ const ItineraryDetailPage = () => {
             <button
               onClick={saveTrip}
               disabled={isSaving}
-              className={`w-full flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors ${
+              className={`w-full flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-colors mb-3 ${
                 isSaving 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -777,9 +835,39 @@ const ItineraryDetailPage = () => {
                 </>
               )}
             </button>
+            
+            {/* Cleanup Duplicates Button */}
+            <button
+              onClick={cleanupDuplicates}
+              disabled={isCleaningDuplicates}
+              className={`w-full flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                isCleaningDuplicates 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-orange-500 text-white hover:bg-orange-600'
+              }`}
+            >
+              {isCleaningDuplicates ? (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400 mr-2"></div>
+                  Cleaning...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3 h-3 mr-2" />
+                  Remove Duplicates
+                </>
+              )}
+            </button>
+            
             {isSaving && (
               <p className="text-xs text-gray-500 mt-2 text-center">
                 Saving your trip and activities to database...
+              </p>
+            )}
+            
+            {isCleaningDuplicates && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Detecting and removing duplicate activities...
               </p>
             )}
           </div>
