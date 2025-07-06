@@ -23,7 +23,9 @@ import {
   Hotel,
   Utensils,
   Camera,
-  Navigation
+  Navigation,
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 
 interface BudgetCategory {
@@ -83,6 +85,7 @@ const NewItinerary: React.FC = () => {
 
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
+  const [gettingAIAdvice, setGettingAIAdvice] = useState<string | null>(null);
 
   useEffect(() => {
     generateDays();
@@ -211,6 +214,174 @@ const NewItinerary: React.FC = () => {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  };
+
+  const handleGetAIAdvice = async (dayIndex: number, activityIndex: number) => {
+    const activity = itinerary[dayIndex].activities[activityIndex];
+    setGettingAIAdvice(activity.id);
+    
+    try {
+      const response = await fetch('/api/activity-advice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activity: activity,
+          destination: tripDetails.destination,
+          travelStyle: 'leisure', // Default since manual creation doesn't have these details
+          groupType: 'family', // Default since manual creation doesn't have these details
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the activity with AI advice
+        const newItinerary = [...itinerary];
+        const currentTips = newItinerary[dayIndex].activities[activityIndex].tips || '';
+        const newTips = currentTips ? `${currentTips}\n\nAI Recommendations:\n${data.advice}` : `AI Recommendations:\n${data.advice}`;
+        newItinerary[dayIndex].activities[activityIndex].tips = newTips;
+        setItinerary(newItinerary);
+      } else {
+        alert('Failed to get AI advice. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error getting AI advice:', error);
+      alert('Failed to get AI advice. Please try again.');
+    } finally {
+      setGettingAIAdvice(null);
+    }
+  };
+
+  const formatAIAdvice = (tips: string) => {
+    if (!tips || !tips.includes('AI Recommendations:')) {
+      return null;
+    }
+
+    const sections = tips.split('AI Recommendations:');
+    const originalTips = sections[0]?.trim();
+    const aiAdvice = sections[1]?.trim();
+
+    if (!aiAdvice) return null;
+
+    // Parse AI advice into structured sections
+    const parseAIAdvice = (text: string) => {
+      const sections = [];
+      
+      // Split by numbered points or bullet points
+      const lines = text.split(/\n+/).filter(line => line.trim());
+      let currentSection = null;
+      let currentContent = [];
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        
+        // Check if this is a section header (contains ** or numbered points)
+        if (trimmed.includes('**') || /^\d+\./.test(trimmed) || trimmed.startsWith('•')) {
+          // Save previous section if it exists
+          if (currentSection) {
+            sections.push({
+              title: currentSection,
+              content: currentContent.join(' ').trim()
+            });
+          }
+          
+          // Start new section
+          currentSection = trimmed.replace(/\*\*/g, '').replace(/^\d+\.\s*/, '').replace(/^•\s*/, '');
+          currentContent = [];
+        } else if (currentSection) {
+          // Add to current section content
+          currentContent.push(trimmed);
+        } else {
+          // If no section started yet, treat as general advice
+          if (!currentSection) {
+            currentSection = "General Recommendations";
+            currentContent = [trimmed];
+          } else {
+            currentContent.push(trimmed);
+          }
+        }
+      }
+
+      // Don't forget the last section
+      if (currentSection) {
+        sections.push({
+          title: currentSection,
+          content: currentContent.join(' ').trim()
+        });
+      }
+
+      return sections;
+    };
+
+    const aiSections = parseAIAdvice(aiAdvice);
+
+    return {
+      originalTips,
+      aiSections
+    };
+  };
+
+  const renderFormattedTips = (activity: Activity, dayIndex: number, activityIndex: number) => {
+    const formattedAdvice = formatAIAdvice(activity.tips || '');
+    
+    if (!formattedAdvice) {
+      // Regular tips display
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <textarea
+            value={activity.tips}
+            onChange={(e) => updateActivity(dayIndex, activityIndex, 'tips', e.target.value)}
+            placeholder="Add tips or recommendations..."
+            className="w-full text-sm text-blue-800 bg-transparent border-none resize-none focus:outline-none"
+            rows={2}
+          />
+        </div>
+      );
+    }
+
+    // Enhanced AI advice display
+    return (
+      <div className="space-y-4">
+        {/* Original Tips (if any) */}
+        {formattedAdvice.originalTips && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <MessageSquare className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Tips</span>
+            </div>
+            <p className="text-sm text-blue-800">{formattedAdvice.originalTips}</p>
+          </div>
+        )}
+
+        {/* AI Advice Sections */}
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2 mb-3">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            <span className="text-sm font-semibold text-purple-800">AI Recommendations</span>
+          </div>
+          
+          <div className="space-y-3">
+            {formattedAdvice.aiSections.map((section, index) => (
+              <div key={index} className="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-purple-100">
+                <div className="flex items-start space-x-2">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-purple-900 mb-1">
+                      {section.title}
+                    </h4>
+                    <p className="text-sm text-purple-800 leading-relaxed">
+                      {section.content}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const saveItinerary = () => {
@@ -640,16 +811,25 @@ const NewItinerary: React.FC = () => {
                               </div>
                             )}
                             
-                            {/* Tips */}
+                            {/* Tips & Notes with AI Advice */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Tips & Notes</label>
-                              <textarea
-                                value={activity.tips}
-                                onChange={(e) => updateActivity(currentDayIndex, activityIndex, 'tips', e.target.value)}
-                                className="w-full text-sm border border-gray-300 rounded px-3 py-2 resize-none"
-                                rows={2}
-                                placeholder="Any tips or notes for this activity..."
-                              />
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Tips & Notes</label>
+                                <button
+                                  onClick={() => handleGetAIAdvice(currentDayIndex, activityIndex)}
+                                  disabled={gettingAIAdvice === activity.id}
+                                  className="flex items-center space-x-1 px-2 py-1 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Get AI advice for this activity"
+                                >
+                                  {gettingAIAdvice === activity.id ? (
+                                    <div className="animate-spin w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                                  ) : (
+                                    <Sparkles className="w-3 h-3" />
+                                  )}
+                                  <span>Get AI Tips</span>
+                                </button>
+                              </div>
+                              {renderFormattedTips(activity, currentDayIndex, activityIndex)}
                             </div>
                             
                             {/* Photos */}
