@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, DollarSign, Star, Search, Filter, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Star, Search, Filter, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface SavedTrip {
@@ -28,6 +28,12 @@ const Dashboard: React.FC = () => {
   const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ show: boolean; tripId: string; tripName: string }>({
+    show: false,
+    tripId: '',
+    tripName: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadSavedTrips();
@@ -122,6 +128,50 @@ const Dashboard: React.FC = () => {
       console.error('Error loading saved trips:', error);
       setSavedTrips([]);
     }
+  };
+
+  const handleDeleteTrip = async (tripId: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/trips/${tripId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete trip');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Remove the deleted trip from the state
+        setSavedTrips(prevTrips => prevTrips.filter(trip => trip.id !== tripId));
+        setDeleteConfirmation({ show: false, tripId: '', tripName: '' });
+      } else {
+        throw new Error(result.error || 'Failed to delete trip');
+      }
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+      alert('Failed to delete trip. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const showDeleteConfirmation = (trip: SavedTrip) => {
+    setDeleteConfirmation({
+      show: true,
+      tripId: trip.id,
+      tripName: trip.name
+    });
+  };
+
+  const hideDeleteConfirmation = () => {
+    setDeleteConfirmation({
+      show: false,
+      tripId: '',
+      tripName: ''
+    });
   };
 
   const filteredItineraries = savedTrips.filter(trip => {
@@ -296,51 +346,93 @@ const Dashboard: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItineraries.map((itinerary) => (
-                <Link key={itinerary.id} href={`/itinerary/${itinerary.id}`}>
-                  <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer group hover:scale-105 hover:-translate-y-2">
-                    <div className="relative h-48 overflow-hidden">
-                      <img 
-                        src={itinerary.image} 
-                        alt={itinerary.destination}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                      <div className="absolute top-4 right-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-md ${getStatusColor(itinerary.status)} border border-white/30`}>
-                          {itinerary.status.charAt(0).toUpperCase() + itinerary.status.slice(1)}
-                        </span>
-                      </div>
+                <div key={itinerary.id} className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer group hover:scale-105 hover:-translate-y-2">
+                  <div className="relative h-48 overflow-hidden">
+                    <img 
+                      src={itinerary.image} 
+                      alt={itinerary.destination}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    <div className="absolute top-4 left-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-md ${getStatusColor(itinerary.status)} border border-white/30`}>
+                        {itinerary.status.charAt(0).toUpperCase() + itinerary.status.slice(1)}
+                      </span>
                     </div>
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-white mb-2 drop-shadow-md">{itinerary.name}</h3>
-                      <p className="text-white/80 mb-4 drop-shadow-sm">{itinerary.destination}</p>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center text-white/80">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          <span>{itinerary.daysCount} days</span>
-                        </div>
-                        <div className="flex items-center text-white/80">
-                          <Users className="h-4 w-4 mr-2" />
-                          <span>{itinerary.travelers} travelers</span>
-                        </div>
-                        <div className="flex items-center text-white/80">
-                          <DollarSign className="h-4 w-4 mr-2" />
-                          <span>${itinerary.budget.total.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center text-white/80">
-                          <Star className="h-4 w-4 mr-2" />
-                          <span>{itinerary.completedActivities}/{itinerary.activitiesCount} done</span>
-                        </div>
+                    
+                    {/* Delete Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showDeleteConfirmation(itinerary);
+                      }}
+                      className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200 opacity-0 group-hover:opacity-100 shadow-lg"
+                      title="Delete trip"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="p-6" onClick={() => window.location.href = `/itinerary/${itinerary.id}`}>
+                    <h3 className="text-xl font-bold text-white mb-2 drop-shadow-md">{itinerary.name}</h3>
+                    <p className="text-white/80 mb-4 drop-shadow-sm">{itinerary.destination}</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center text-white/80">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        <span>{itinerary.daysCount} days</span>
+                      </div>
+                      <div className="flex items-center text-white/80">
+                        <Users className="h-4 w-4 mr-2" />
+                        <span>{itinerary.travelers} travelers</span>
+                      </div>
+                      <div className="flex items-center text-white/80">
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        <span>${itinerary.budget.total.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center text-white/80">
+                        <Star className="h-4 w-4 mr-2" />
+                        <span>{itinerary.completedActivities}/{itinerary.activitiesCount} done</span>
                       </div>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-4">Delete Trip</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Are you sure you want to delete "<span className="font-medium">{deleteConfirmation.tripName}</span>"? 
+              This action cannot be undone and will permanently remove all activities and data associated with this trip.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={hideDeleteConfirmation}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteTrip(deleteConfirmation.tripId)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

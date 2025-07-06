@@ -53,6 +53,13 @@ const ItineraryDetailPage = () => {
     websiteUrl: '',
     photos: []
   });
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ show: boolean; tripId: string; tripName: string }>({
+    show: false,
+    tripId: '',
+    tripName: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -549,6 +556,51 @@ const ItineraryDetailPage = () => {
     ));
   };
 
+  const handleDeleteTrip = async (tripId: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/trips/${tripId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete trip');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Navigate back to dashboard after successful deletion
+        router.push('/dashboard');
+      } else {
+        throw new Error(result.error || 'Failed to delete trip');
+      }
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+      alert('Failed to delete trip. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const showDeleteConfirmation = () => {
+    if (trip) {
+      setDeleteConfirmation({
+        show: true,
+        tripId: trip.id,
+        tripName: trip.name
+      });
+    }
+  };
+
+  const hideDeleteConfirmation = () => {
+    setDeleteConfirmation({
+      show: false,
+      tripId: '',
+      tripName: ''
+    });
+  };
+
   // Don't render until mounted to prevent SSR issues
   if (!mounted || loading) {
     return (
@@ -585,155 +637,132 @@ const ItineraryDetailPage = () => {
   const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header - Visible on Small Screens Only */}
-      <div className="block lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-4 relative z-40">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Plane className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">TravelCraft</h1>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile Sidebar Toggle */}
+      <button
+        onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg lg:hidden"
+      >
+        <Menu className="w-6 h-6 text-gray-600" />
+      </button>
+
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-40 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Mobile close button */}
+        <button
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 lg:hidden"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b">
+            <h1 className="text-xl font-bold text-gray-900">Trip Details</h1>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={showDeleteConfirmation}
+                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Delete trip"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors bg-gray-50 border border-gray-200"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+
+          {/* Trip Info */}
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">{trip?.name}</h2>
+            <p className="text-gray-600 mb-3">{trip?.destination}</p>
+            <div className="text-sm text-gray-500 space-y-1">
+              <div>Duration: {totalDays} days</div>
+              <div>Travelers: {trip?.travelers}</div>
+              <div>Status: {trip?.status}</div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="p-6 border-b">
+            <div className="space-y-2">
+              <button
+                onClick={() => setViewMode('structured')}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                  viewMode === 'structured'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <span className="font-medium">Daily Timeline</span>
+              </button>
+              <button
+                onClick={() => setViewMode('original')}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                  viewMode === 'original'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <span className="font-medium">Trip Overview</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Day Navigation */}
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-900">Days</h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setTotalDays(Math.max(1, totalDays - 1))}
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setTotalDays(totalDays + 1)}
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {days.map((day) => (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDay(day)}
+                  className={`p-2 rounded-lg text-sm font-medium transition-colors ${
+                    selectedDay === day
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Day {day}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex">
-        {/* Sidebar Overlay for Mobile */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        ></div>
+      )}
 
-        {/* Desktop Sidebar - Hidden on Mobile */}
-        <div className="hidden lg:flex lg:static lg:inset-y-0 lg:left-0 lg:z-auto lg:w-64 lg:bg-white lg:shadow-sm lg:border-r lg:border-gray-200 lg:flex-col">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Plane className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">TravelCraft</h1>
-                <p className="text-sm text-gray-500">Premium Itinerary Builder</p>
-              </div>
-            </div>
-          </div>
-          
-          <nav className="flex-1 p-4">
-            <div className="space-y-2">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h2>
-              <a 
-                href="/" 
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-              >
-                <Plane className="w-4 h-4" />
-                <span>Home</span>
-              </a>
-              <button 
-                onClick={() => router.push('/dashboard')}
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors w-full text-left"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Back to Dashboard</span>
-              </button>
-              <a 
-                href="/my-trips" 
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-              >
-                <Bookmark className="w-4 h-4" />
-                <span>My Itineraries</span>
-              </a>
-              <a 
-                href="/ai-builder" 
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-              >
-                <Star className="w-4 h-4" />
-                <span>Create Itinerary</span>
-              </a>
-            </div>
-          </nav>
-        </div>
-
-        {/* Mobile Sidebar Overlay */}
-        <div className={`
-          lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col
-          transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}>
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Plane className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">TravelCraft</h1>
-                  <p className="text-sm text-gray-500">Premium Itinerary Builder</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors lg:hidden"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          <nav className="flex-1 p-4">
-            <div className="space-y-2">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h2>
-              <a 
-                href="/" 
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-              >
-                <Plane className="w-4 h-4" />
-                <span>Home</span>
-              </a>
-              <button 
-                onClick={() => {
-                  setSidebarOpen(false);
-                  router.push('/dashboard');
-                }}
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors w-full text-left"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Back to Dashboard</span>
-              </button>
-              <a 
-                href="/my-trips" 
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-              >
-                <Bookmark className="w-4 h-4" />
-                <span>My Itineraries</span>
-              </a>
-              <a 
-                href="/ai-builder" 
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-              >
-                <Star className="w-4 h-4" />
-                <span>Create Itinerary</span>
-              </a>
-            </div>
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto w-full">
-          <div className="p-3 sm:p-6 lg:p-8">
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto w-full">
+        <div className="p-3 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-4">
@@ -1511,31 +1540,36 @@ const ItineraryDetailPage = () => {
       </div>
       
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Activity</h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete this activity? This action cannot be undone.
+      {deleteConfirmation.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-4">Delete Trip</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Are you sure you want to delete "<span className="font-medium">{deleteConfirmation.tripName}</span>"? 
+              This action cannot be undone and will permanently remove all activities and data associated with this trip.
             </p>
-            <div className="flex items-center justify-end space-x-3">
+            <div className="flex space-x-4">
               <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                onClick={hideDeleteConfirmation}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() => handleDeleteActivity(showDeleteConfirm)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                onClick={() => handleDeleteTrip(deleteConfirmation.tripId)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50"
               >
-                Delete
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 };
