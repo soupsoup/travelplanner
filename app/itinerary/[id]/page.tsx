@@ -171,7 +171,7 @@ const ItineraryDetailPage = () => {
 
   // Helper function to recalculate total budget from activities
   const recalculateBudget = (activitiesList: any[]) => {
-    return activitiesList.reduce((sum, activity) => sum + (activity.cost || 0), 0);
+    return activitiesList.reduce((sum, activity) => sum + (parseFloat(activity.cost) || 0), 0);
   };
 
   const saveTrip = async () => {
@@ -862,7 +862,7 @@ const ItineraryDetailPage = () => {
   const selectedDayActivities = mounted ? sortActivitiesByTime(
     activities.filter(activity => activity.day === selectedDay)
   ) : [];
-  const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0);
+  const totalCost = activities.reduce((sum, activity) => sum + (parseFloat(activity.cost) || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
