@@ -1,7 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 
-// Helper function to parse AI itinerary text into structured activities
+// Sample AI response for testing
+const sampleAIResponse = `**Trip Overview:**
+This 9-day Orlando itinerary is tailored specifically for a family of 4 seeking an adventure-filled theme park experience. With a focus on the world-famous attractions in the area, this trip will immerse you in the magic and excitement that Orlando is renowned for. From thrilling rides to captivating shows, this itinerary promises an unforgettable journey for all ages.
+
+**Day 1 (July 11th):**
+Morning: Arrive in Orlando and check into your hotel - Spend some time settling in and exploring the hotel amenities
+Afternoon: Head to Magic Kingdom Park at Walt Disney World Resort - Embark on classic rides like Space Mountain, Splash Mountain, and the iconic Haunted Mansion
+Evening: Enjoy a delicious dinner at Be Our Guest Restaurant - Don't miss the spectacular fireworks show in the evening
+
+**Day 2 (July 12th):**
+Morning: Start your day at Disney's Hollywood Studios - Experience the thrills of Rock 'n' Roller Coaster Starring Aerosmith and the epic Star Wars: Rise of the Resistance attraction
+Afternoon: Continue exploring Hollywood Studios - Catch shows like the Indiana Jones Epic Stunt Spectacular and the mesmerizing Beauty and the Beast – Live on Stage
+Evening: Head to Disney Springs for an evening of shopping, dining, and entertainment - Catch the captivating Cirque du Soleil show, "Drawn to Life," or enjoy a meal at one of the many restaurants
+
+**Day 3 (July 13th):**
+Morning: Spend the day at Universal Studios Florida - Experience the excitement of The Wizarding World of Harry Potter – Diagon Alley and the thrilling Revenge of the Mummy roller coaster
+Afternoon: Continue your Universal Studios adventure - Catch shows like the Hilarious Universal's Horror Make-Up Show and the action-packed WaterWorld stunt show
+Evening: Enjoy a delicious dinner at the iconic Toothsome Chocolate Emporium & Savory Feast Kitchen - Where you can indulge in decadent desserts and savory dishes
+
+**Budget Breakdown:**
+- Accommodation: $1,200
+- Dining: $800
+- Activities: $600
+- Transportation: $200
+- Total: $2,800
+
+**Local Insights:**
+Orlando offers incredible weather year-round, but July can be hot and humid. Stay hydrated and take breaks in the shade during your theme park visits. Consider purchasing theme park tickets in advance to save time and money. Explore the diverse culinary scene in Orlando, from international flavors to local favorites like Cuban and Southern cuisine.`;
+
+// Copy the parsing functions from the main API
 function parseAIItinerary(text: string, destination: string, totalDays: number) {
   if (!text) return { activities: [], overview: '' };
   
@@ -180,8 +208,6 @@ function extractLocationFromDescription(description: string): string | null {
   return null;
 }
 
-
-
 function determineActivityType(title: string, fullLine: string): string {
   const titleLower = title.toLowerCase();
   const fullLineLower = fullLine.toLowerCase();
@@ -220,15 +246,6 @@ function extractCostFromLine(line: string): number | null {
   return null;
 }
 
-function extractLocationFromLine(line: string): string | null {
-  // Look for location indicators
-  const locationMatch = line.match(/(?:at|in|to|visit)\s+([^,.!?;:\(\)]+)/i);
-  if (locationMatch) {
-    return locationMatch[1].trim().slice(0, 100);
-  }
-  return null;
-}
-
 function generateEstimatedCost(type: string, seed: number): number {
   // Use title length as seed for deterministic pseudo-random
   const pseudoRandom = (seed * 9301 + 49297) % 233280 / 233280;
@@ -259,192 +276,25 @@ function extractTipsFromLine(line: string): string {
   return '';
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    // Check if API key is available
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.error('ANTHROPIC_API_KEY not found in environment variables');
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'API key not configured',
-          details: 'ANTHROPIC_API_KEY environment variable is missing'
-        },
-        { status: 500 }
-      );
+export async function GET(request: NextRequest) {
+  console.log('Testing AI parsing logic...');
+  
+  const destination = 'Orlando, FL';
+  const totalDays = 9;
+  
+  const result = parseAIItinerary(sampleAIResponse, destination, totalDays);
+  
+  return NextResponse.json({
+    success: true,
+    original: sampleAIResponse,
+    parsed: result,
+    summary: {
+      overviewLength: result.overview.length,
+      activitiesCount: result.activities.length,
+      activitiesByDay: result.activities.reduce((acc, activity) => {
+        acc[activity.day] = (acc[activity.day] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>)
     }
-
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-
-    const body = await request.json();
-    const { 
-      destination, 
-      narrative,
-      startDate, 
-      endDate, 
-      travelers, 
-      budget, 
-      interests, 
-      travelStyle, 
-      groupType, 
-      activityLevel 
-    } = body;
-
-    // Validate required fields
-    if (!destination || !narrative || !startDate || !endDate || !travelers) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Missing required fields',
-          details: 'destination, narrative, startDate, endDate, and travelers are required'
-        },
-        { status: 400 }
-      );
-    }
-
-    // Calculate trip duration
-    const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
-
-    // Create a detailed prompt for Claude that incorporates the user's narrative
-    const prompt = `Create a detailed travel itinerary for ${destination} based on this traveler's description of their ideal trip:
-
-**Traveler's Vision:**
-"${narrative}"
-
-**Trip Details:**
-- Destination: ${destination}
-- Duration: ${days} days (${startDate} to ${endDate})
-- Number of travelers: ${travelers}
-- Budget: ${budget}
-- Travel style: ${travelStyle}
-- Group type: ${groupType}
-- Activity level: ${activityLevel}
-- Interests: ${interests?.join(', ') || 'General travel'}
-
-**Instructions:**
-Based on the traveler's narrative description above, create a highly personalized itinerary that:
-1. Addresses the specific experiences and desires mentioned in their description
-2. Matches their stated travel style and preferences
-3. Includes day-by-day activities for all ${days} days
-4. Incorporates specific restaurants, attractions, and experiences that align with their vision
-5. Considers their budget and travel style preferences
-6. Tailors activities to their mentioned interests and group type
-7. Includes practical tips and local insights
-8. Provides estimated costs where relevant
-
-**IMPORTANT: Format the response EXACTLY as follows:**
-
-**Trip Overview:**
-[Write a compelling overview that references their specific goals and desires]
-
-**Day 1 (${startDate}):**
-Morning: [Activity name] - [Description with location and details]
-Afternoon: [Activity name] - [Description with location and details]
-Evening: [Activity name] - [Description with location and details]
-
-**Day 2:**
-Morning: [Activity name] - [Description with location and details]
-Afternoon: [Activity name] - [Description with location and details]
-Evening: [Activity name] - [Description with location and details]
-
-[Continue this pattern for all ${days} days]
-
-**Budget Breakdown:**
-- Accommodation: $[amount]
-- Dining: $[amount]
-- Activities: $[amount]
-- Transportation: $[amount]
-- Total: $[amount]
-
-**Local Insights:**
-[Cultural tips and insider knowledge]
-
-Make this itinerary feel like it was crafted specifically for their vision and preferences!`;
-
-    console.log('Calling Anthropic API for destination:', destination);
-    console.log('Request details:', { destination, days, travelers, budget, travelStyle });
-    
-    let itinerary = '';
-    let parsedData = { activities: [], overview: '' };
-    
-    try {
-      const message = await anthropic.messages.create({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 3000,
-        temperature: 0.7,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      });
-
-      console.log('Anthropic API response received, content type:', message.content[0].type);
-      
-      itinerary = message.content[0].type === 'text' ? message.content[0].text : 'Error generating itinerary';
-
-      console.log('Successfully generated itinerary for:', destination, '- Length:', itinerary.length);
-      
-      // Parse the AI response into structured activities
-      parsedData = parseAIItinerary(itinerary, destination, days);
-      
-      console.log('Parsed', parsedData.activities.length, 'activities from AI response');
-    } catch (apiError: any) {
-      console.error('Anthropic API call failed:', apiError);
-      
-      // Handle specific Anthropic errors
-      if (apiError.status === 401) {
-        throw new Error('Authentication failed: Invalid API key');
-      } else if (apiError.status === 429) {
-        throw new Error('Rate limit exceeded: Too many requests');
-      } else if (apiError.status === 403) {
-        throw new Error('Access denied: API key lacks permissions');
-      } else if (apiError.status === 500) {
-        throw new Error('Anthropic service error: Please try again later');
-      } else if (apiError.message?.includes('network')) {
-        throw new Error('Network error: Please check your internet connection');
-      } else if (apiError.message?.includes('timeout')) {
-        throw new Error('Request timeout: Please try again');
-      } else {
-        throw new Error(`Anthropic API error: ${apiError.message || 'Unknown API error'}`);
-      }
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      itinerary,
-      activities: parsedData.activities,
-      overview: parsedData.overview,
-      tripDetails: {
-        destination,
-        people: travelers,
-        days,
-        transport: 'Flight',
-        budget,
-        interests: interests?.join(', ') || 'General travel',
-        travelStyle,
-        groupType,
-        activityLevel,
-        startDate,
-        endDate
-      }
-    });
-
-  } catch (error) {
-    console.error('Error generating itinerary:', error);
-    console.error('Error type:', typeof error);
-    console.error('Error details:', error instanceof Error ? error.message : JSON.stringify(error));
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to generate itinerary',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
+  });
 } 
