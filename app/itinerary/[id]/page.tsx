@@ -61,31 +61,77 @@ const ItineraryDetailPage = () => {
   useEffect(() => {
     if (!mounted || !tripId) return;
     
-    try {
-      // Load the specific trip by ID from savedTrips
-      const savedTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
-      const foundTrip = savedTrips.find((t: any) => t.id === tripId);
-      
-      if (foundTrip) {
-        setTrip(foundTrip);
-        setActivities(foundTrip.activities || []);
-        setTripOverview(foundTrip.overview || '');
-        setTotalDays(foundTrip.daysCount || foundTrip.tripDetails?.days || 7);
-        setTripName(foundTrip.name || '');
-        setTripImage(foundTrip.image || '');
-      } else {
-        // Trip not found, redirect to dashboard
-        console.error('Trip not found:', tripId);
+    const loadTrip = async () => {
+      try {
+        const response = await fetch(`/api/trips/${tripId}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.error('Trip not found:', tripId);
+            router.push('/dashboard');
+            return;
+          }
+          throw new Error('Failed to fetch trip');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          const tripData = result.data;
+          const trip = tripData.trip;
+          const activities = tripData.activities || [];
+          
+          // Transform the trip data to match the expected format
+          const transformedTrip = {
+            id: trip.id,
+            name: trip.name,
+            destination: trip.destination,
+            startDate: trip.startDate,
+            endDate: trip.endDate,
+            daysCount: trip.daysCount,
+            travelers: trip.travelers,
+            status: trip.status,
+            image: trip.image || `https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=500&h=300&fit=crop`,
+            overview: trip.overview || '',
+            createdAt: trip.createdAt,
+            updatedAt: trip.updatedAt,
+            tripDetails: {
+              destination: trip.destination,
+              days: trip.daysCount,
+              people: trip.travelers,
+              startDate: trip.startDate,
+              endDate: trip.endDate
+            },
+            activities: activities,
+            budget: {
+              total: activities.reduce((sum: number, activity: any) => sum + (parseFloat(activity.cost) || 0), 0),
+              currency: 'USD'
+            },
+            activitiesCount: activities.length,
+            completedActivities: 0
+          };
+          
+          setTrip(transformedTrip);
+          setActivities(activities);
+          setTripOverview(trip.overview || '');
+          setTotalDays(trip.daysCount || 7);
+          setTripName(trip.name || '');
+          setTripImage(trip.image || '');
+        } else {
+          console.error('Failed to load trip:', result.error);
+          router.push('/dashboard');
+          return;
+        }
+      } catch (error) {
+        console.error('Error loading trip:', error);
         router.push('/dashboard');
         return;
       }
-    } catch (error) {
-      console.error('Error loading trip:', error);
-      router.push('/dashboard');
-      return;
-    }
+      
+      setLoading(false);
+    };
     
-    setLoading(false);
+    loadTrip();
   }, [mounted, tripId, router]);
 
   const generateItineraryFromActivities = (activitiesList: any[]) => {
@@ -113,64 +159,92 @@ const ItineraryDetailPage = () => {
     return result;
   };
 
-  const saveTrip = () => {
+  const saveTrip = async () => {
     if (!trip || !mounted) return;
     
     try {
-      // Update the trip in savedTrips with better error handling
-      const savedTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
-      const updatedTrips = savedTrips.map((t: any) => 
-        t.id === trip.id 
-          ? {
-              ...t,
-              activities,
-              overview: tripOverview,
-              daysCount: totalDays,
-              activitiesCount: activities.length,
-              budget: {
-                ...t.budget,
-                total: activities.reduce((sum, activity) => sum + (activity.cost || 0), 0)
-              },
-              updatedAt: new Date().toISOString()
-            }
-          : t
-      );
+      // Update trip in database
+      const tripUpdate = {
+        name: tripName,
+        overview: tripOverview,
+        daysCount: totalDays,
+        image: tripImage
+      };
       
-      // Validate the data before saving
-      if (updatedTrips.length === 0) {
-        console.error('No trips found to update');
-        alert('Error: Trip not found. Please refresh the page and try again.');
-        return;
+      const response = await fetch(`/api/trips/${trip.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tripUpdate)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update trip');
       }
       
-      // Save to localStorage with error handling
-      try {
-        localStorage.setItem('savedTrips', JSON.stringify(updatedTrips));
-      } catch (storageError) {
-        console.error('LocalStorage error:', storageError);
-        alert('Storage is full or unavailable. Please clear some browser data and try again.');
-        return;
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update trip');
       }
       
-      // Update current trip state
-      const updatedTrip = updatedTrips.find((t: any) => t.id === trip.id);
-      if (updatedTrip) {
-        setTrip(updatedTrip);
+      // Update activities in database
+      for (const activity of activities) {
+        if (activity.id) {
+          // Update existing activity
+          const activityResponse = await fetch(`/api/activities/${activity.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(activity)
+          });
+          
+          if (!activityResponse.ok) {
+            console.error('Failed to update activity:', activity.id);
+          }
+        } else {
+          // Create new activity
+          const activityResponse = await fetch('/api/activities', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...activity,
+              tripId: trip.id
+            })
+          });
+          
+          if (!activityResponse.ok) {
+            console.error('Failed to create activity:', activity.title);
+          }
+        }
       }
+      
+      // Update local state
+      setTrip(prev => ({
+        ...prev,
+        name: tripName,
+        overview: tripOverview,
+        daysCount: totalDays,
+        image: tripImage,
+        activities: activities,
+        activitiesCount: activities.length,
+        budget: {
+          ...prev.budget,
+          total: activities.reduce((sum, activity) => sum + (parseFloat(activity.cost) || 0), 0)
+        },
+        updatedAt: new Date().toISOString()
+      }));
       
       alert('Trip updated successfully!');
     } catch (error) {
       console.error('Error saving trip:', error);
       
-      // More specific error messages
       if (error instanceof Error) {
-        if (error.message.includes('quota') || error.message.includes('storage')) {
-          alert('Storage is full. Please clear some browser data and try again.');
-        } else if (error.message.includes('JSON')) {
-          alert('Data formatting error. Please try refreshing the page and try again.');
-        } else {
-          alert(`Save failed: ${error.message}. Please try again.`);
-        }
+        alert(`Save failed: ${error.message}. Please try again.`);
       } else {
         alert('Failed to save trip changes.');
       }

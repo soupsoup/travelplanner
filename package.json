@@ -4,14 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",
     "@auth/prisma-adapter": "^2.9.1",
+    "@neondatabase/serverless": "^1.0.1",
     "@prisma/client": "^6.11.1",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
@@ -25,6 +29,7 @@
     "axios": "^1.6.7",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
+    "drizzle-orm": "^0.44.2",
     "lucide-react": "^0.513.0",
     "next": "^15.3.5",
     "next-auth": "^4.24.11",
@@ -37,6 +42,7 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.11.4",
+    "drizzle-kit": "^0.31.4",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.1.0",
     "prisma": "^6.11.1"

@@ -52,23 +52,55 @@ const MyTripsPage = () => {
   };
 
   useEffect(() => {
-    const savedTrips = JSON.parse(localStorage.getItem('savedTrips') || '[]');
+    const loadTrips = async () => {
+      try {
+        const response = await fetch('/api/trips');
+        if (!response.ok) {
+          throw new Error('Failed to fetch trips');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          // Transform database trips to match the expected format
+          const transformedTrips = result.data.map((trip: any) => ({
+            id: trip.id,
+            name: trip.name,
+            destination: trip.destination,
+            startDate: trip.startDate,
+            endDate: trip.endDate,
+            daysCount: trip.daysCount,
+            travelers: trip.travelers,
+            budget: { total: 0, currency: 'USD' }, // Default values
+            status: trip.status,
+            image: trip.image || `https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=500&h=300&fit=crop`,
+            activitiesCount: 0, // Will be populated by activities
+            completedActivities: 0,
+            tripDetails: {
+              destination: trip.destination,
+              days: trip.daysCount,
+              people: trip.travelers,
+              startDate: trip.startDate,
+              endDate: trip.endDate
+            },
+            activities: [],
+            overview: trip.overview || '',
+            createdAt: trip.createdAt,
+            updatedAt: trip.updatedAt
+          }));
+          
+          setTrips(transformedTrips);
+        } else {
+          console.error('Failed to load trips:', result.error);
+          setTrips([]);
+        }
+      } catch (error) {
+        console.error('Error loading trips:', error);
+        setTrips([]);
+      }
+    };
     
-    // Migrate any trips with old data structure
-    const migratedTrips = savedTrips.map(migrateTripActivities);
-    
-    // Check if any trips were migrated
-    const wasMigrated = migratedTrips.some((trip: any, index: number) => 
-      JSON.stringify(trip) !== JSON.stringify(savedTrips[index])
-    );
-    
-    if (wasMigrated) {
-      console.log('Some trips were migrated to new format');
-      // Save the migrated trips back to localStorage
-      localStorage.setItem('savedTrips', JSON.stringify(migratedTrips));
-    }
-    
-    setTrips(migratedTrips);
+    loadTrips();
   }, []);
 
   const handleView = (trip: any) => {

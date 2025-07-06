@@ -162,16 +162,54 @@ const AIBuilder: React.FC = () => {
 
       if (data.success) {
         try {
-          // Save the AI-generated itinerary to localStorage (only if mounted)
-          if (mounted && typeof window !== 'undefined') {
-            localStorage.setItem('tripDetails', JSON.stringify(data.tripDetails));
-            localStorage.setItem('itinerary', data.itinerary);
+          // Save the AI-generated itinerary to database
+          const tripId = `trip_${Date.now()}`;
+          
+          // Create trip data
+          const tripData = {
+            id: tripId,
+            name: `${data.tripDetails.destination} Trip`,
+            destination: data.tripDetails.destination,
+            startDate: data.tripDetails.startDate,
+            endDate: data.tripDetails.endDate,
+            daysCount: data.tripDetails.days,
+            travelers: data.tripDetails.people,
+            status: 'planning',
+            overview: data.itinerary
+          };
+
+          // Parse activities from the itinerary if they exist
+          let activities = [];
+          if (data.activities && Array.isArray(data.activities)) {
+            activities = data.activities;
+          }
+
+          // Save to database
+          const saveResponse = await fetch('/api/trips', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              trip: tripData,
+              activities: activities
+            })
+          });
+
+          if (!saveResponse.ok) {
+            throw new Error('Failed to save trip to database');
+          }
+
+          const saveResult = await saveResponse.json();
+          
+          if (!saveResult.success) {
+            throw new Error(saveResult.error || 'Failed to save trip');
           }
           
-          // Redirect to the itinerary page
-          router.push('/itinerary');
-        } catch (storageError) {
-          console.error('Error saving to localStorage:', storageError);
+          // Redirect to the specific trip page
+          router.push(`/itinerary/${tripId}`);
+        } catch (saveError) {
+          console.error('Error saving to database:', saveError);
           alert('Generated itinerary successfully but failed to save. Please try again.');
         }
       } else {
@@ -229,7 +267,7 @@ const AIBuilder: React.FC = () => {
     }
   };
 
-  const handleSkipAIGeneration = () => {
+  const handleSkipAIGeneration = async () => {
     if (!mounted) {
       alert('Application not ready. Please try again.');
       return;
@@ -247,32 +285,64 @@ const AIBuilder: React.FC = () => {
       const end = new Date(formData.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
       const daysDiff = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 
-      // Create basic trip details for manual creation
-      const tripDetails = {
+      const tripId = `trip_${Date.now()}`;
+      
+      // Create trip data for database
+      const tripData = {
+        id: tripId,
+        name: `${formData.destination} Trip`,
         destination: formData.destination,
-        days: daysDiff,
-        people: formData.travelers || 1,
-        budget: formData.budget || '$1,000',
         startDate: formData.startDate || new Date().toISOString().split('T')[0],
         endDate: formData.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        travelStyle: formData.travelStyle || 'mid-range',
-        groupType: formData.groupType || 'family',
-        interests: formData.interests || [],
-        narrative: formData.narrative || ''
+        daysCount: daysDiff,
+        travelers: formData.travelers || 1,
+        status: 'planning',
+        overview: `Trip Overview:\nStart planning your ${daysDiff}-day trip to ${formData.destination}. Add activities, accommodations, and experiences to create your perfect itinerary.`
       };
 
-      // Create a basic blank itinerary structure
-      const blankItinerary = `Trip Overview:\nStart planning your ${daysDiff}-day trip to ${formData.destination}. Add activities, accommodations, and experiences to create your perfect itinerary.\n\n` +
-        Array.from({ length: daysDiff }, (_, i) => `**Day ${i + 1}**\n- Add your first activity for this day\n\n`).join('');
+      // Create initial activities for each day
+      const activities = Array.from({ length: daysDiff }, (_, i) => ({
+        title: `Plan activities for Day ${i + 1}`,
+        description: `Add your activities, accommodations, and experiences for day ${i + 1} of your trip.`,
+        location: formData.destination,
+        time: '09:00',
+        cost: 0,
+        day: i + 1,
+        type: 'activity',
+        priority: 'medium',
+        tips: '',
+        websiteUrl: '',
+        googleMapLink: '',
+        startLocation: '',
+        endLocation: '',
+        transportMode: '',
+        photos: []
+      }));
 
-      // Save to localStorage (only if mounted)
-      if (mounted && typeof window !== 'undefined') {
-        localStorage.setItem('tripDetails', JSON.stringify(tripDetails));
-        localStorage.setItem('itinerary', blankItinerary);
+      // Save to database
+      const saveResponse = await fetch('/api/trips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          trip: tripData,
+          activities: activities
+        })
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to create trip in database');
       }
 
-      // Redirect to the itinerary page for manual editing
-      router.push('/itinerary');
+      const saveResult = await saveResponse.json();
+      
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || 'Failed to create trip');
+      }
+
+      // Redirect to the specific trip page for manual editing
+      router.push(`/itinerary/${tripId}`);
     } catch (error) {
       console.error('Error creating manual itinerary:', error);
       alert('Failed to create manual itinerary. Please try again.');
