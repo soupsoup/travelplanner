@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, DollarSign, Clock, Users, Plus, Trash2, Edit, X, Menu, Car, Utensils, Camera, Plane, Building, ShoppingBag, Trees, Star, Navigation, Link, ExternalLink, FileText, Import, Save, Hotel, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, DollarSign, Clock, Users, Plus, Trash2, Edit, X, Menu, Car, Utensils, Camera, Plane, Building, ShoppingBag, Trees, Star, Navigation, Link, ExternalLink, FileText, Import, Save, Hotel, ArrowLeft, ArrowRight, Sparkles, Share2, Mail, MessageSquare } from 'lucide-react';
 import { extractTimeAndDistance, isValidGoogleMapLink } from '../../../lib/mapUtils';
 import { sortActivitiesByTime, estimateDistanceFromLocations, formatDuration, type LocationDistance } from '../../../lib/timeUtils';
 
@@ -63,6 +63,11 @@ const ItineraryDetailPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isCleaningDuplicates, setIsCleaningDuplicates] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareMessage, setShareMessage] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareLink, setShareLink] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -829,6 +834,71 @@ const ItineraryDetailPage = () => {
     }
   };
 
+  const generateShareLink = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/itinerary/${tripId}/share`;
+  };
+
+  const handleShareViaEmail = async () => {
+    if (!shareEmail.trim()) {
+      alert('Please enter an email address');
+      return;
+    }
+
+    setIsSharing(true);
+    
+    try {
+      const response = await fetch('/api/share-itinerary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tripId,
+          email: shareEmail,
+          message: shareMessage,
+          shareLink: generateShareLink(),
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Itinerary shared successfully!');
+        setShowShareModal(false);
+        setShareEmail('');
+        setShareMessage('');
+      } else {
+        alert('Failed to share itinerary: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error sharing itinerary:', error);
+      alert('Error sharing itinerary');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleShareViaText = () => {
+    const shareLink = generateShareLink();
+    const message = `Check out my trip to ${trip?.destination}: ${shareLink}`;
+    
+    // Create SMS link
+    const smsLink = `sms:?body=${encodeURIComponent(message)}`;
+    window.open(smsLink, '_blank');
+  };
+
+  const copyShareLink = async () => {
+    const link = generateShareLink();
+    try {
+      await navigator.clipboard.writeText(link);
+      alert('Share link copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      alert('Failed to copy link');
+    }
+  };
+
   // Don't render until mounted to prevent SSR issues
   if (!mounted || loading) {
     return (
@@ -1061,17 +1131,26 @@ const ItineraryDetailPage = () => {
         <div className="p-3 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-4">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors touch-target"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{trip.name}</h1>
-                <p className="text-gray-600">{trip.destination}</p>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors touch-target"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{trip.name}</h1>
+                  <p className="text-gray-600">{trip.destination}</p>
+                </div>
               </div>
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Share</span>
+              </button>
             </div>
           </div>
 
@@ -1897,6 +1976,97 @@ const ItineraryDetailPage = () => {
                 Delete Activity
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-4">
+              <Share2 className="w-6 h-6 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-4">Share Itinerary</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Share your trip to <span className="font-medium">{trip?.destination}</span> with friends and family
+            </p>
+            
+            <div className="space-y-4">
+              {/* Email Sharing */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message (optional)
+                </label>
+                <textarea
+                  value={shareMessage}
+                  onChange={(e) => setShareMessage(e.target.value)}
+                  placeholder="Check out my amazing trip!"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleShareViaEmail}
+                  disabled={isSharing || !shareEmail.trim()}
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSharing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4" />
+                      <span>Send Email</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleShareViaText}
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Text</span>
+                </button>
+              </div>
+              
+              {/* Copy Link */}
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={copyShareLink}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                >
+                  <Link className="w-4 h-4" />
+                  <span>Copy Share Link</span>
+                </button>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
         </div>
       )}
