@@ -68,6 +68,11 @@ const ItineraryDetailPage = () => {
   const [shareMessage, setShareMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [shareLink, setShareLink] = useState('');
+  const [showAIRevisionModal, setShowAIRevisionModal] = useState(false);
+  const [revisingActivity, setRevisingActivity] = useState<any>(null);
+  const [aiRevisionPrompt, setAiRevisionPrompt] = useState('');
+  const [isGettingAIRevision, setIsGettingAIRevision] = useState(false);
+  const [aiRevisionSuggestions, setAiRevisionSuggestions] = useState<string>('');
 
   useEffect(() => {
     setMounted(true);
@@ -899,6 +904,65 @@ const ItineraryDetailPage = () => {
     }
   };
 
+  const handleAIRevision = (activity: any) => {
+    setRevisingActivity(activity);
+    setShowAIRevisionModal(true);
+    setAiRevisionPrompt('');
+    setAiRevisionSuggestions('');
+  };
+
+  const getAIRevisionSuggestions = async () => {
+    if (!revisingActivity || !aiRevisionPrompt.trim()) {
+      alert('Please enter a revision request');
+      return;
+    }
+
+    setIsGettingAIRevision(true);
+    
+    try {
+      const response = await fetch('/api/activity-revision', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activity: revisingActivity,
+          trip: trip,
+          prompt: aiRevisionPrompt,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setAiRevisionSuggestions(result.suggestions);
+      } else {
+        alert('Failed to get AI revision: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error getting AI revision:', error);
+      alert('Error getting AI revision');
+    } finally {
+      setIsGettingAIRevision(false);
+    }
+  };
+
+  const applyAIRevision = (field: string, value: string) => {
+    if (!revisingActivity) return;
+    
+    setActivities(prev => prev.map(activity => 
+      activity.id === revisingActivity.id 
+        ? { ...activity, [field]: value }
+        : activity
+    ));
+    
+    setHasUnsavedChanges(true);
+    setShowAIRevisionModal(false);
+    setRevisingActivity(null);
+    setAiRevisionPrompt('');
+    setAiRevisionSuggestions('');
+  };
+
   // Don't render until mounted to prevent SSR issues
   if (!mounted || loading) {
     return (
@@ -1396,6 +1460,15 @@ const ItineraryDetailPage = () => {
                                     className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded hover:bg-gray-200 touch-target"
                                   >
                                     Edit
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => handleAIRevision(activity)}
+                                    className="px-3 py-1 bg-purple-100 text-purple-600 text-xs rounded hover:bg-purple-200 touch-target"
+                                    title="Get AI revision suggestions"
+                                  >
+                                    <Sparkles className="w-3 h-3 inline mr-1" />
+                                    AI Revise
                                   </button>
                                   
                                   <button
@@ -2063,6 +2136,134 @@ const ItineraryDetailPage = () => {
             
             <button
               onClick={() => setShowShareModal(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI Revision Modal */}
+      {showAIRevisionModal && revisingActivity && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-4">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-4">AI Activity Revision</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Get AI suggestions to improve your activity: <span className="font-medium">{revisingActivity.title}</span>
+            </p>
+            
+            <div className="space-y-6">
+              {/* Current Activity Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">Current Activity</h4>
+                <div className="space-y-2 text-sm">
+                  <div><strong>Title:</strong> {revisingActivity.title}</div>
+                  <div><strong>Description:</strong> {revisingActivity.description}</div>
+                  <div><strong>Time:</strong> {revisingActivity.time}</div>
+                  <div><strong>Location:</strong> {revisingActivity.location}</div>
+                  <div><strong>Cost:</strong> ${revisingActivity.cost}</div>
+                  <div><strong>Type:</strong> {revisingActivity.type}</div>
+                </div>
+              </div>
+              
+              {/* Revision Prompt */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  What would you like to improve? (e.g., "Make it more budget-friendly", "Add more details", "Suggest alternatives")
+                </label>
+                <textarea
+                  value={aiRevisionPrompt}
+                  onChange={(e) => setAiRevisionPrompt(e.target.value)}
+                  placeholder="Describe what you'd like to improve about this activity..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* Get Suggestions Button */}
+              <button
+                onClick={getAIRevisionSuggestions}
+                disabled={isGettingAIRevision || !aiRevisionPrompt.trim()}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGettingAIRevision ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Getting AI Suggestions...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Get AI Suggestions</span>
+                  </>
+                )}
+              </button>
+              
+              {/* AI Suggestions */}
+              {aiRevisionSuggestions && (
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <h4 className="font-semibold text-purple-900 mb-3">AI Suggestions</h4>
+                  <div className="prose prose-sm max-w-none">
+                    <div className="whitespace-pre-wrap text-gray-700">{aiRevisionSuggestions}</div>
+                  </div>
+                  
+                  {/* Quick Apply Buttons */}
+                  <div className="mt-4 space-y-2">
+                    <h5 className="font-medium text-purple-900">Quick Apply:</h5>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          // Extract title from suggestions and apply
+                          const titleMatch = aiRevisionSuggestions.match(/Title: (.+)/);
+                          if (titleMatch) {
+                            applyAIRevision('title', titleMatch[1]);
+                          }
+                        }}
+                        className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                      >
+                        Apply Title
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Extract description from suggestions and apply
+                          const descMatch = aiRevisionSuggestions.match(/Description: (.+)/);
+                          if (descMatch) {
+                            applyAIRevision('description', descMatch[1]);
+                          }
+                        }}
+                        className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                      >
+                        Apply Description
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Extract tips from suggestions and apply
+                          const tipsMatch = aiRevisionSuggestions.match(/Tips: (.+)/);
+                          if (tipsMatch) {
+                            applyAIRevision('tips', tipsMatch[1]);
+                          }
+                        }}
+                        className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                      >
+                        Apply Tips
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => {
+                setShowAIRevisionModal(false);
+                setRevisingActivity(null);
+                setAiRevisionPrompt('');
+                setAiRevisionSuggestions('');
+              }}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600"
             >
               <X className="w-6 h-6" />
