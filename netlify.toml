@@ -7,4 +7,4 @@
   package = "@netlify/plugin-nextjs"
 
 [build.environment]
-  NEXT_PRIVATE_TARGET = "server" 
+  NEXT_PRIVATE_TARGET = "server" # Force cache clear Sun Aug  3 11:29:35 EDT 2025
