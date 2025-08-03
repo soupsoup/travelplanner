@@ -1,6 +1,6 @@
 # ✨ Luxe Travel Planner
 
-A sophisticated travel planning application with luxury design and AI-powered itinerary creation. Plan extraordinary journeys with comprehensive budget tracking, day-by-day scheduling, and elegant user experience.
+A sophisticated travel planning application with luxury design and AI-powered itinerary creation. Plan extraordinary journeys with comprehensive budget tracking, day-by-day scheduling, and elegant user experience. Updated with new API key.
 
 ![Luxe Travel Planner](https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80)
 
