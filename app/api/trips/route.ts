@@ -96,10 +96,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Increment free trips used if user doesn't have subscription
-    if (!user.hasActiveSubscription) {
-      await incrementFreeTripsUsed(user.id);
-    }
+                 // Increment free trips used if user doesn't have subscription
+             if (!user.hasActiveSubscription) {
+               console.log('🔍 Incrementing free trips used for user:', user.id);
+               const incrementResult = await incrementFreeTripsUsed(user.id);
+               console.log('🔍 Increment result:', incrementResult);
+             }
 
     return NextResponse.json({
       success: true,

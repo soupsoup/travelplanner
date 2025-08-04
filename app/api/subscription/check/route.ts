@@ -4,6 +4,7 @@ import { canCreateTrip, getUserByEmail } from '@/lib/db/actions';
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
+    console.log('🔍 Subscription check requested for email:', email);
 
     if (!email) {
       return NextResponse.json(
@@ -14,10 +15,13 @@ export async function POST(request: NextRequest) {
 
     // Get or create user
     let userResult = await getUserByEmail(email);
+    console.log('🔍 User lookup result:', userResult);
+    
     if (!userResult.success) {
       // Create a new user if they don't exist
       const { createUser } = await import('@/lib/db/actions');
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🔍 Creating new user with ID:', userId);
       userResult = await createUser({
         id: userId,
         email,
@@ -25,6 +29,7 @@ export async function POST(request: NextRequest) {
         hasActiveSubscription: false,
         freeTripsUsed: 0
       });
+      console.log('🔍 User creation result:', userResult);
     }
 
     if (!userResult.success) {
@@ -35,7 +40,10 @@ export async function POST(request: NextRequest) {
     }
 
     const user = userResult.data;
+    console.log('🔍 User data:', user);
+    
     const canCreateResult = await canCreateTrip(user.id);
+    console.log('🔍 Can create trip result:', canCreateResult);
 
     if (!canCreateResult.success) {
       return NextResponse.json(
