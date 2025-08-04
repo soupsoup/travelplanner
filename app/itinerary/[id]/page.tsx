@@ -243,7 +243,7 @@ const ItineraryDetailPage = () => {
       }
       
       // Identify activities that were deleted (in database but not in current state)
-      const currentActivityIds = new Set(activities.map(a => a.id).filter(id => typeof id === 'number' && id > 0));
+      const currentActivityIds = new Set(activities.map(a => a.id).filter(id => typeof id === 'number' && id > 0 && id <= 1000000000));
       const deletedActivityIds = currentDatabaseActivities
         .filter(dbActivity => !currentActivityIds.has(dbActivity.id))
         .map(dbActivity => dbActivity.id);
@@ -282,8 +282,9 @@ const ItineraryDetailPage = () => {
       
       for (const activity of activities) {
         try {
-          // Consider an activity new if it has no id, id is not a number, or id <= 0 (including negative temp IDs)
-          const isExistingDatabaseActivity = typeof activity.id === 'number' && activity.id > 0;
+          // Consider an activity new if it has no id, id is not a number, id <= 0 (including negative temp IDs), or id is a very large number (timestamp-based)
+          const isLargeTimestampId = typeof activity.id === 'number' && activity.id > 1000000000; // IDs larger than 1 billion are likely timestamps
+          const isExistingDatabaseActivity = typeof activity.id === 'number' && activity.id > 0 && !isLargeTimestampId;
           
           if (isExistingDatabaseActivity) {
             // Update existing database activity (positive ID from database)
