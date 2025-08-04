@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft, MapPin, Calendar, Users, DollarSign, Plane, Heart, Activity, Utensils, ShoppingBag, Mountain, Camera, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ErrorBoundary from './ErrorBoundary';
+import SubscriptionModal from '../components/SubscriptionModal';
 
 const steps = [
   { id: 'destination', title: 'Trip Vision', description: 'Tell us about your dream trip' },
@@ -62,12 +63,74 @@ const AIBuilder: React.FC = () => {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<{
+    canCreate: boolean;
+    hasActiveSubscription: boolean;
+    freeTripsUsed: number;
+  } | null>(null);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const router = useRouter();
 
   // Prevent SSR issues
   React.useEffect(() => {
     setMounted(true);
+    checkSubscriptionStatus();
   }, []);
+
+  const checkSubscriptionStatus = async () => {
+    try {
+      const response = await fetch('/api/subscription/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: 'demo@example.com' }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSubscriptionStatus({
+            canCreate: result.data.canCreate,
+            hasActiveSubscription: result.data.user.hasActiveSubscription,
+            freeTripsUsed: result.data.user.freeTripsUsed,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
+    }
+  };
+
+  const handleSubscribe = async (plan: 'monthly' | 'annual') => {
+    try {
+      const response = await fetch('/api/subscription/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: 'demo@example.com', plan }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSubscriptionStatus({
+            canCreate: true,
+            hasActiveSubscription: true,
+            freeTripsUsed: result.data.user.freeTripsUsed,
+          });
+          setShowSubscriptionModal(false);
+          alert('Subscription activated successfully! You can now create unlimited itineraries.');
+        }
+      } else {
+        alert('Failed to purchase subscription. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error purchasing subscription:', error);
+      alert('Failed to purchase subscription. Please try again.');
+    }
+  };
 
   // Don't render until mounted to prevent SSR issues
   if (!mounted) {
@@ -109,6 +172,12 @@ const AIBuilder: React.FC = () => {
   const handleGenerateItinerary = async () => {
     if (!mounted) {
       alert('Application not ready. Please try again.');
+      return;
+    }
+
+    // Check subscription status before allowing trip creation
+    if (subscriptionStatus && !subscriptionStatus.canCreate) {
+      setShowSubscriptionModal(true);
       return;
     }
     
@@ -756,6 +825,24 @@ const AIBuilder: React.FC = () => {
                   ></div>
                 </div>
               </div>
+
+              {/* Subscription Status */}
+              {subscriptionStatus && (
+                <div className="hidden sm:flex items-center space-x-2 ml-4">
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    subscriptionStatus.hasActiveSubscription 
+                      ? 'bg-green-100 text-green-800' 
+                      : subscriptionStatus.freeTripsUsed >= 1
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {subscriptionStatus.hasActiveSubscription 
+                      ? 'Premium' 
+                      : `${subscriptionStatus.freeTripsUsed}/1 free trips used`
+                    }
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Mobile Progress Bar */}
@@ -814,6 +901,14 @@ const AIBuilder: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        onSubscribe={handleSubscribe}
+        userEmail="demo@example.com"
+      />
     </div>
   );
 };
