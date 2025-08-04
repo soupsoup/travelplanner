@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTripWithActivities, updateTrip, deleteTrip } from '@/lib/db/actions';
 
 // GET /api/trips/[id] - Get a specific trip with activities
 export async function GET(

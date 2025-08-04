@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createTrip, getAllTrips, createTripWithActivities } from '@/lib/db/actions';
-import { NewTrip, NewActivity } from '@/lib/db/schema';
 
 // GET /api/trips - Get all trips
 export async function GET() {
