@@ -84,7 +84,7 @@ const AIBuilder: React.FC = () => {
 
   const checkSubscriptionStatus = async () => {
     try {
-      const response = await fetch('/api/subscription/check', {
+      const response = await fetch('/api/subscription-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ const AIBuilder: React.FC = () => {
 
     // Always check subscription status with fresh data first
     try {
-      const response = await fetch('/api/subscription/check', {
+      const response = await fetch('/api/subscription-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -394,7 +394,7 @@ const AIBuilder: React.FC = () => {
 
     // Always check subscription status with fresh data first
     try {
-      const response = await fetch('/api/subscription/check', {
+      const response = await fetch('/api/subscription-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
