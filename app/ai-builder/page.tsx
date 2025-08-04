@@ -84,24 +84,15 @@ const AIBuilder: React.FC = () => {
 
   const checkSubscriptionStatus = async () => {
     try {
-      const response = await fetch('/api/subscription-check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: 'demo@example.com' }),
-      });
+      // Use localStorage to track trips for now
+      const tripsCreated = parseInt(localStorage.getItem('tripsCreated') || '0');
+      const hasSubscription = localStorage.getItem('hasSubscription') === 'true';
       
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setSubscriptionStatus({
-            canCreate: result.data.canCreate,
-            hasActiveSubscription: result.data.user.hasActiveSubscription,
-            freeTripsUsed: result.data.user.freeTripsUsed,
-          });
-        }
-      }
+      setSubscriptionStatus({
+        canCreate: hasSubscription || tripsCreated < 1,
+        hasActiveSubscription: hasSubscription,
+        freeTripsUsed: tripsCreated,
+      });
     } catch (error) {
       console.error('Error checking subscription status:', error);
     }
@@ -109,28 +100,16 @@ const AIBuilder: React.FC = () => {
 
   const handleSubscribe = async (plan: 'monthly' | 'annual') => {
     try {
-      const response = await fetch('/api/subscription/purchase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: 'demo@example.com', plan }),
-      });
+      // For now, just set the subscription flag in localStorage
+      localStorage.setItem('hasSubscription', 'true');
       
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setSubscriptionStatus({
-            canCreate: true,
-            hasActiveSubscription: true,
-            freeTripsUsed: result.data.user.freeTripsUsed,
-          });
-          setShowSubscriptionModal(false);
-          alert('Subscription activated successfully! You can now create unlimited itineraries.');
-        }
-      } else {
-        alert('Failed to purchase subscription. Please try again.');
-      }
+      setSubscriptionStatus({
+        canCreate: true,
+        hasActiveSubscription: true,
+        freeTripsUsed: parseInt(localStorage.getItem('tripsCreated') || '0'),
+      });
+      setShowSubscriptionModal(false);
+      alert('Subscription activated successfully! You can now create unlimited itineraries.');
     } catch (error) {
       console.error('Error purchasing subscription:', error);
       alert('Failed to purchase subscription. Please try again.');
@@ -183,46 +162,18 @@ const AIBuilder: React.FC = () => {
     console.log('🔍 Checking subscription status before trip creation...');
     console.log('Current subscription status:', subscriptionStatus);
 
-    // Always check subscription status with fresh data first
-    try {
-      const response = await fetch('/api/subscription-check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: 'demo@example.com' }),
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('📊 Fresh subscription check result:', result);
-        
-        if (result.success) {
-          const canCreate = result.data.canCreate;
-          const freeTripsUsed = result.data.user.freeTripsUsed;
-          const hasActiveSubscription = result.data.user.hasActiveSubscription;
-          
-          console.log(`🎯 Can create: ${canCreate}, Free trips used: ${freeTripsUsed}, Has subscription: ${hasActiveSubscription}`);
-          
-          // Update subscription status with fresh data
-          setSubscriptionStatus({
-            canCreate,
-            hasActiveSubscription,
-            freeTripsUsed,
-          });
-          
-          // If user cannot create trips, show subscription modal
-          if (!canCreate) {
-            console.log('🚫 User cannot create trips - showing subscription modal');
-            console.log('Setting showSubscriptionModal to true');
-            setShowSubscriptionModal(true);
-            console.log('Modal state should now be true');
-            return;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error checking subscription status:', error);
+    // Check subscription status using localStorage
+    const tripsCreated = parseInt(localStorage.getItem('tripsCreated') || '0');
+    const hasSubscription = localStorage.getItem('hasSubscription') === 'true';
+    
+    console.log(`🎯 Trips created: ${tripsCreated}, Has subscription: ${hasSubscription}`);
+    
+    if (!hasSubscription && tripsCreated >= 1) {
+      console.log('🚫 User cannot create trips - showing subscription modal');
+      console.log('Setting showSubscriptionModal to true');
+      setShowSubscriptionModal(true);
+      console.log('Modal state should now be true');
+      return;
     }
     
     setIsGenerating(true);
@@ -320,6 +271,10 @@ const AIBuilder: React.FC = () => {
             throw new Error(saveResult.error || 'Failed to save trip');
           }
           
+          // Increment trip counter in localStorage
+          const currentTrips = parseInt(localStorage.getItem('tripsCreated') || '0');
+          localStorage.setItem('tripsCreated', (currentTrips + 1).toString());
+          
           // Refresh subscription status after creating trip
           await checkSubscriptionStatus();
           
@@ -392,46 +347,18 @@ const AIBuilder: React.FC = () => {
 
     console.log('🔍 Checking subscription status before manual trip creation...');
 
-    // Always check subscription status with fresh data first
-    try {
-      const response = await fetch('/api/subscription-check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: 'demo@example.com' }),
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('📊 Fresh subscription check result (manual):', result);
-        
-        if (result.success) {
-          const canCreate = result.data.canCreate;
-          const freeTripsUsed = result.data.user.freeTripsUsed;
-          const hasActiveSubscription = result.data.user.hasActiveSubscription;
-          
-          console.log(`🎯 Can create: ${canCreate}, Free trips used: ${freeTripsUsed}, Has subscription: ${hasActiveSubscription}`);
-          
-          // Update subscription status with fresh data
-          setSubscriptionStatus({
-            canCreate,
-            hasActiveSubscription,
-            freeTripsUsed,
-          });
-          
-          // If user cannot create trips, show subscription modal
-          if (!canCreate) {
-            console.log('🚫 User cannot create trips - showing subscription modal (manual)');
-            console.log('Setting showSubscriptionModal to true');
-            setShowSubscriptionModal(true);
-            console.log('Modal state should now be true');
-            return;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error checking subscription status:', error);
+    // Check subscription status using localStorage
+    const tripsCreated = parseInt(localStorage.getItem('tripsCreated') || '0');
+    const hasSubscription = localStorage.getItem('hasSubscription') === 'true';
+    
+    console.log(`🎯 Trips created: ${tripsCreated}, Has subscription: ${hasSubscription}`);
+    
+    if (!hasSubscription && tripsCreated >= 1) {
+      console.log('🚫 User cannot create trips - showing subscription modal (manual)');
+      console.log('Setting showSubscriptionModal to true');
+      setShowSubscriptionModal(true);
+      console.log('Modal state should now be true');
+      return;
     }
 
     // Validate minimum required fields for manual creation
@@ -503,6 +430,10 @@ const AIBuilder: React.FC = () => {
         throw new Error(saveResult.error || 'Failed to create trip');
       }
 
+      // Increment trip counter in localStorage
+      const currentTrips = parseInt(localStorage.getItem('tripsCreated') || '0');
+      localStorage.setItem('tripsCreated', (currentTrips + 1).toString());
+      
       // Refresh subscription status after creating trip
       await checkSubscriptionStatus();
 
