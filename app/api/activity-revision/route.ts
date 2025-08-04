@@ -48,15 +48,26 @@ Please provide specific, actionable suggestions to improve this activity based o
 6. **Timing**: Suggest better timing if relevant
 7. **Location**: Suggest better locations or nearby attractions if relevant
 
-Format your response clearly with sections marked by **bold headers**. Be specific and practical in your suggestions. Focus on making the activity more enjoyable, cost-effective, or better suited to the traveler's needs.
+IMPORTANT: Format your response with clear sections marked by **bold headers**. Each section should be on its own line with the content below it. Be specific and practical in your suggestions.
 
 Example format:
-**Title**: [suggested title]
-**Description**: [improved description]
-**Tips**: [helpful tips]
-**Cost Optimization**: [budget suggestions]
-**Timing**: [timing suggestions]
-**Location**: [location suggestions]`;
+**Title**
+[Your suggested title here]
+
+**Description**
+[Your improved description here]
+
+**Tips**
+[Your helpful tips here]
+
+**Cost Optimization**
+[Your budget suggestions here]
+
+**Timing**
+[Your timing suggestions here]
+
+**Location**
+[Your location suggestions here]`;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',

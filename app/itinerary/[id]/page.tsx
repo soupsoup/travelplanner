@@ -968,6 +968,86 @@ const ItineraryDetailPage = () => {
     setAiRevisionSuggestions('');
   };
 
+  const parseAISuggestions = (suggestions: string) => {
+    const parsed: any = {};
+    
+    // Split by lines and look for sections
+    const lines = suggestions.split('\n');
+    let currentSection = '';
+    let currentContent = '';
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Check for section headers (bold or with **)
+      if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+        // Save previous section
+        if (currentSection && currentContent) {
+          parsed[currentSection.toLowerCase()] = currentContent.trim();
+        }
+        
+        // Start new section
+        currentSection = trimmedLine.replace(/\*\*/g, '').toLowerCase();
+        currentContent = '';
+      } else if (trimmedLine.startsWith('**') && !trimmedLine.endsWith('**')) {
+        // Handle multi-line bold headers
+        currentSection = trimmedLine.replace(/\*\*/g, '').toLowerCase();
+        currentContent = '';
+      } else if (currentSection) {
+        // Add content to current section
+        if (currentContent) {
+          currentContent += '\n' + trimmedLine;
+        } else {
+          currentContent = trimmedLine;
+        }
+      }
+    }
+    
+    // Save last section
+    if (currentSection && currentContent) {
+      parsed[currentSection.toLowerCase()] = currentContent.trim();
+    }
+    
+    return parsed;
+  };
+
+  const extractFieldFromSuggestions = (field: string) => {
+    if (!aiRevisionSuggestions) return '';
+    
+    const parsed = parseAISuggestions(aiRevisionSuggestions);
+    const fieldKey = field.toLowerCase();
+    
+    // Try different variations of the field name
+    const possibleKeys = [
+      fieldKey,
+      fieldKey.replace('title', 'name'),
+      fieldKey.replace('description', 'desc'),
+      fieldKey.replace('tips', 'tip')
+    ];
+    
+    for (const key of possibleKeys) {
+      if (parsed[key]) {
+        return parsed[key];
+      }
+    }
+    
+    // Fallback: try regex matching
+    const patterns = [
+      new RegExp(`\\*\\*${field}\\*\\*:?\\s*([^\\n]+(?:\\n[^\\n]+)*)`, 'i'),
+      new RegExp(`${field}:\\s*([^\\n]+(?:\\n[^\\n]+)*)`, 'i'),
+      new RegExp(`\\*\\*${field}\\*\\*\\s*([^\\n]+(?:\\n[^\\n]+)*)`, 'i')
+    ];
+    
+    for (const pattern of patterns) {
+      const match = aiRevisionSuggestions.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    
+    return '';
+  };
+
   const handleAIGenerateActivity = () => {
     setShowAIGenerateModal(true);
     setAiGeneratePrompt('');
@@ -2292,10 +2372,11 @@ const ItineraryDetailPage = () => {
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => {
-                          // Extract title from suggestions and apply
-                          const titleMatch = aiRevisionSuggestions.match(/Title: (.+)/);
-                          if (titleMatch) {
-                            applyAIRevision('title', titleMatch[1]);
+                          const title = extractFieldFromSuggestions('title');
+                          if (title) {
+                            applyAIRevision('title', title);
+                          } else {
+                            alert('Could not extract title from AI suggestions');
                           }
                         }}
                         className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
@@ -2304,10 +2385,11 @@ const ItineraryDetailPage = () => {
                       </button>
                       <button
                         onClick={() => {
-                          // Extract description from suggestions and apply
-                          const descMatch = aiRevisionSuggestions.match(/Description: (.+)/);
-                          if (descMatch) {
-                            applyAIRevision('description', descMatch[1]);
+                          const description = extractFieldFromSuggestions('description');
+                          if (description) {
+                            applyAIRevision('description', description);
+                          } else {
+                            alert('Could not extract description from AI suggestions');
                           }
                         }}
                         className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
@@ -2316,10 +2398,11 @@ const ItineraryDetailPage = () => {
                       </button>
                       <button
                         onClick={() => {
-                          // Extract tips from suggestions and apply
-                          const tipsMatch = aiRevisionSuggestions.match(/Tips: (.+)/);
-                          if (tipsMatch) {
-                            applyAIRevision('tips', tipsMatch[1]);
+                          const tips = extractFieldFromSuggestions('tips');
+                          if (tips) {
+                            applyAIRevision('tips', tips);
+                          } else {
+                            alert('Could not extract tips from AI suggestions');
                           }
                         }}
                         className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
