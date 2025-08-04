@@ -175,13 +175,10 @@ const AIBuilder: React.FC = () => {
       return;
     }
 
-    // Check subscription status before allowing trip creation
-    if (subscriptionStatus && !subscriptionStatus.canCreate) {
-      setShowSubscriptionModal(true);
-      return;
-    }
+    console.log('🔍 Checking subscription status before trip creation...');
+    console.log('Current subscription status:', subscriptionStatus);
 
-    // Double-check subscription status with fresh data
+    // Always check subscription status with fresh data first
     try {
       const response = await fetch('/api/subscription/check', {
         method: 'POST',
@@ -193,18 +190,32 @@ const AIBuilder: React.FC = () => {
       
       if (response.ok) {
         const result = await response.json();
-        if (result.success && !result.data.canCreate) {
+        console.log('📊 Fresh subscription check result:', result);
+        
+        if (result.success) {
+          const canCreate = result.data.canCreate;
+          const freeTripsUsed = result.data.user.freeTripsUsed;
+          const hasActiveSubscription = result.data.user.hasActiveSubscription;
+          
+          console.log(`🎯 Can create: ${canCreate}, Free trips used: ${freeTripsUsed}, Has subscription: ${hasActiveSubscription}`);
+          
+          // Update subscription status with fresh data
           setSubscriptionStatus({
-            canCreate: result.data.canCreate,
-            hasActiveSubscription: result.data.user.hasActiveSubscription,
-            freeTripsUsed: result.data.user.freeTripsUsed,
+            canCreate,
+            hasActiveSubscription,
+            freeTripsUsed,
           });
-          setShowSubscriptionModal(true);
-          return;
+          
+          // If user cannot create trips, show subscription modal
+          if (!canCreate) {
+            console.log('🚫 User cannot create trips - showing subscription modal');
+            setShowSubscriptionModal(true);
+            return;
+          }
         }
       }
     } catch (error) {
-      console.error('Error checking subscription status:', error);
+      console.error('❌ Error checking subscription status:', error);
     }
     
     setIsGenerating(true);
@@ -370,6 +381,48 @@ const AIBuilder: React.FC = () => {
     if (!mounted) {
       alert('Application not ready. Please try again.');
       return;
+    }
+
+    console.log('🔍 Checking subscription status before manual trip creation...');
+
+    // Always check subscription status with fresh data first
+    try {
+      const response = await fetch('/api/subscription/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: 'demo@example.com' }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📊 Fresh subscription check result (manual):', result);
+        
+        if (result.success) {
+          const canCreate = result.data.canCreate;
+          const freeTripsUsed = result.data.user.freeTripsUsed;
+          const hasActiveSubscription = result.data.user.hasActiveSubscription;
+          
+          console.log(`🎯 Can create: ${canCreate}, Free trips used: ${freeTripsUsed}, Has subscription: ${hasActiveSubscription}`);
+          
+          // Update subscription status with fresh data
+          setSubscriptionStatus({
+            canCreate,
+            hasActiveSubscription,
+            freeTripsUsed,
+          });
+          
+          // If user cannot create trips, show subscription modal
+          if (!canCreate) {
+            console.log('🚫 User cannot create trips - showing subscription modal');
+            setShowSubscriptionModal(true);
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error checking subscription status:', error);
     }
 
     // Validate minimum required fields for manual creation
