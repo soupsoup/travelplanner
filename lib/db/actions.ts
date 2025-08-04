@@ -1,7 +1,7 @@
 import { db } from './index';
-import { trips, activities, tripBudgets, tripDetails } from './schema';
+import { trips, activities, tripBudgets, tripDetails, users, subscriptions } from './schema';
 import { eq, desc, and } from 'drizzle-orm';
-import type { NewTrip, NewActivity, Trip, Activity } from './schema';
+import type { NewTrip, NewActivity, Trip, Activity, NewUser, User, NewSubscription, Subscription } from './schema';
 
 // Trip operations
 export async function createTrip(tripData: NewTrip) {
@@ -228,5 +228,161 @@ export async function getTripWithActivities(tripId: string) {
   } catch (error) {
     console.error('Error fetching trip with activities:', error);
     return { success: false, error: 'Failed to fetch trip with activities' };
+  }
+}
+
+// Subscription operations
+export async function createUser(userData: NewUser) {
+  try {
+    const result = await db.insert(users).values(userData).returning();
+    return { success: true, data: result[0] };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return { success: false, error: 'Failed to create user' };
+  }
+}
+
+export async function getUserById(userId: string) {
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    
+    if (result.length === 0) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    return { success: true, data: result[0] };
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return { success: false, error: 'Failed to fetch user' };
+  }
+}
+
+export async function getUserByEmail(email: string) {
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    if (result.length === 0) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    return { success: true, data: result[0] };
+  } catch (error) {
+    console.error('Error fetching user by email:', error);
+    return { success: false, error: 'Failed to fetch user' };
+  }
+}
+
+export async function updateUser(userId: string, updateData: Partial<NewUser>) {
+  try {
+    const result = await db
+      .update(users)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    if (result.length === 0) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    return { success: true, data: result[0] };
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return { success: false, error: 'Failed to update user' };
+  }
+}
+
+export async function incrementFreeTripsUsed(userId: string) {
+  try {
+    // First get the current user to get the current count
+    const userResult = await getUserById(userId);
+    if (!userResult.success) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    const currentCount = userResult.data.freeTripsUsed || 0;
+    
+    const result = await db
+      .update(users)
+      .set({ 
+        freeTripsUsed: currentCount + 1,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    if (result.length === 0) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    return { success: true, data: result[0] };
+  } catch (error) {
+    console.error('Error incrementing free trips used:', error);
+    return { success: false, error: 'Failed to increment free trips used' };
+  }
+}
+
+export async function createSubscription(subscriptionData: NewSubscription) {
+  try {
+    const result = await db.insert(subscriptions).values(subscriptionData).returning();
+    return { success: true, data: result[0] };
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    return { success: false, error: 'Failed to create subscription' };
+  }
+}
+
+export async function getActiveSubscription(userId: string) {
+  try {
+    const result = await db
+      .select()
+      .from(subscriptions)
+      .where(and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, 'active')
+      ))
+      .limit(1);
+    
+    if (result.length === 0) {
+      return { success: false, error: 'No active subscription found' };
+    }
+    
+    return { success: true, data: result[0] };
+  } catch (error) {
+    console.error('Error fetching active subscription:', error);
+    return { success: false, error: 'Failed to fetch subscription' };
+  }
+}
+
+export async function canCreateTrip(userId: string) {
+  try {
+    const userResult = await getUserById(userId);
+    if (!userResult.success) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    const user = userResult.data;
+    
+    // Check if user has active subscription
+    if (user.hasActiveSubscription) {
+      return { success: true, canCreate: true };
+    }
+    
+    // Check if user has used their free trip
+    if (user.freeTripsUsed >= 1) {
+      return { success: true, canCreate: false, reason: 'subscription_required' };
+    }
+    
+    return { success: true, canCreate: true };
+  } catch (error) {
+    console.error('Error checking if user can create trip:', error);
+    return { success: false, error: 'Failed to check trip creation permission' };
   }
 } 

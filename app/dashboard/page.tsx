@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Users, DollarSign, Star, Search, Filter, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import SubscriptionModal from '../components/SubscriptionModal';
 
 interface SavedTrip {
   id: string;
@@ -34,10 +35,80 @@ const Dashboard: React.FC = () => {
     tripName: ''
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Subscription state
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [subscriptionStatus, setSubscriptionStatus] = useState<{
+    canCreate: boolean;
+    hasActiveSubscription: boolean;
+    freeTripsUsed: number;
+  } | null>(null);
 
   useEffect(() => {
     loadSavedTrips();
+    checkSubscriptionStatus();
   }, []);
+
+  const checkSubscriptionStatus = async () => {
+    // For demo purposes, use a default email
+    // In a real app, this would come from user authentication
+    const demoEmail = 'demo@example.com';
+    setUserEmail(demoEmail);
+    
+    try {
+      const response = await fetch('/api/subscription/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: demoEmail }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSubscriptionStatus({
+            canCreate: result.data.canCreate,
+            hasActiveSubscription: result.data.user.hasActiveSubscription,
+            freeTripsUsed: result.data.user.freeTripsUsed,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
+    }
+  };
+
+  const handleSubscribe = async (plan: 'monthly' | 'annual') => {
+    try {
+      const response = await fetch('/api/subscription/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: userEmail, plan }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSubscriptionStatus({
+            canCreate: true,
+            hasActiveSubscription: true,
+            freeTripsUsed: result.data.user.freeTripsUsed,
+          });
+          setShowSubscriptionModal(false);
+          alert('Subscription activated successfully! You can now create unlimited itineraries.');
+        }
+      } else {
+        alert('Failed to purchase subscription. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error purchasing subscription:', error);
+      alert('Failed to purchase subscription. Please try again.');
+    }
+  };
 
   const migrateTripActivities = (trip: any) => {
     // Check if activities is in old format (array of day objects)
@@ -221,19 +292,43 @@ const Dashboard: React.FC = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Action Buttons */}
         <div className="flex justify-center mb-12">
-          <Link href="/ai-builder" className="group">
+          <div 
+            className="group cursor-pointer"
+            onClick={() => {
+              if (subscriptionStatus && !subscriptionStatus.canCreate) {
+                setShowSubscriptionModal(true);
+              } else {
+                window.location.href = '/ai-builder';
+              }
+            }}
+          >
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20 text-white px-8 py-6 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1">
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl shadow-lg">
                   <Plus className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <div className="text-xl font-bold drop-shadow-md">Create New Itinerary</div>
-                  <div className="text-sm text-white/80 drop-shadow-sm">AI-powered or manual planning</div>
+                  <div className="text-xl font-bold drop-shadow-md">
+                    {subscriptionStatus && !subscriptionStatus.canCreate 
+                      ? 'Subscribe to Create More' 
+                      : 'Create New Itinerary'
+                    }
+                  </div>
+                  <div className="text-sm text-white/80 drop-shadow-sm">
+                    {subscriptionStatus && !subscriptionStatus.canCreate 
+                      ? 'Unlock unlimited itineraries' 
+                      : 'AI-powered or manual planning'
+                    }
+                  </div>
+                  {subscriptionStatus && !subscriptionStatus.hasActiveSubscription && (
+                    <div className="text-xs text-yellow-300 drop-shadow-sm mt-1">
+                      {subscriptionStatus.freeTripsUsed}/1 free trips used
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </Link>
+          </div>
         </div>
 
         {/* Search and Filter */}
@@ -433,6 +528,14 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        onSubscribe={handleSubscribe}
+        userEmail={userEmail}
+      />
     </div>
   );
 };

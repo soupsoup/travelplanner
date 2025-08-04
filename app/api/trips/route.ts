@@ -31,13 +31,53 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { trip, activities = [] } = body;
+    const { trip, activities = [], userEmail } = body;
 
     // Validate required fields
     if (!trip || !trip.id || !trip.name || !trip.destination) {
       return NextResponse.json(
         { success: false, error: 'Missing required trip fields' },
         { status: 400 }
+      );
+    }
+
+    if (!userEmail) {
+      return NextResponse.json(
+        { success: false, error: 'User email is required' },
+        { status: 400 }
+      );
+    }
+
+    // Check subscription status
+    const { getUserByEmail, canCreateTrip, incrementFreeTripsUsed } = await import('@/lib/db/actions');
+    
+    const userResult = await getUserByEmail(userEmail);
+    if (!userResult.success) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const user = userResult.data;
+    const canCreateResult = await canCreateTrip(user.id);
+
+    if (!canCreateResult.success) {
+      return NextResponse.json(
+        { success: false, error: canCreateResult.error },
+        { status: 500 }
+      );
+    }
+
+    if (!canCreateResult.canCreate) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Subscription required',
+          reason: 'subscription_required',
+          message: 'You have used your free trip. Please subscribe to create more itineraries.'
+        },
+        { status: 402 } // Payment Required
       );
     }
 
@@ -54,6 +94,11 @@ export async function POST(request: NextRequest) {
         { success: false, error: result.error },
         { status: 500 }
       );
+    }
+
+    // Increment free trips used if user doesn't have subscription
+    if (!user.hasActiveSubscription) {
+      await incrementFreeTripsUsed(user.id);
     }
 
     return NextResponse.json({

@@ -192,7 +192,8 @@ const AIBuilder: React.FC = () => {
             },
             body: JSON.stringify({
               trip: tripData,
-              activities: activities
+              activities: activities,
+              userEmail: 'demo@example.com' // For demo purposes
             })
           });
 
@@ -327,7 +328,8 @@ const AIBuilder: React.FC = () => {
         },
         body: JSON.stringify({
           trip: tripData,
-          activities: activities
+          activities: activities,
+          userEmail: 'demo@example.com' // For demo purposes
         })
       });
 

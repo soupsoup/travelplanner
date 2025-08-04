@@ -86,6 +86,34 @@ export const tripDetails = pgTable('trip_details', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Subscription table
+export const subscriptions = pgTable('subscriptions', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  status: text('status').notNull().default('active'),
+  plan: text('plan').notNull(), // 'monthly' or 'annual'
+  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  stripeCustomerId: text('stripe_customer_id'),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// User table for subscription management
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  hasActiveSubscription: boolean('has_active_subscription').default(false),
+  freeTripsUsed: integer('free_trips_used').default(0),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // Export types for TypeScript
 export type Trip = typeof trips.$inferSelect;
 export type NewTrip = typeof trips.$inferInsert;
@@ -94,4 +122,8 @@ export type NewActivity = typeof activities.$inferInsert;
 export type TripBudget = typeof tripBudgets.$inferSelect;
 export type NewTripBudget = typeof tripBudgets.$inferInsert;
 export type TripDetail = typeof tripDetails.$inferSelect;
-export type NewTripDetail = typeof tripDetails.$inferInsert; 
+export type NewTripDetail = typeof tripDetails.$inferInsert;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert; 
