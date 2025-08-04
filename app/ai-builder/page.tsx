@@ -180,6 +180,32 @@ const AIBuilder: React.FC = () => {
       setShowSubscriptionModal(true);
       return;
     }
+
+    // Double-check subscription status with fresh data
+    try {
+      const response = await fetch('/api/subscription/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: 'demo@example.com' }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && !result.data.canCreate) {
+          setSubscriptionStatus({
+            canCreate: result.data.canCreate,
+            hasActiveSubscription: result.data.user.hasActiveSubscription,
+            freeTripsUsed: result.data.user.freeTripsUsed,
+          });
+          setShowSubscriptionModal(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
+    }
     
     setIsGenerating(true);
     try {
@@ -275,6 +301,9 @@ const AIBuilder: React.FC = () => {
           if (!saveResult.success) {
             throw new Error(saveResult.error || 'Failed to save trip');
           }
+          
+          // Refresh subscription status after creating trip
+          await checkSubscriptionStatus();
           
           // Redirect to the specific trip page
           router.push(`/itinerary/${tripId}`);
@@ -411,6 +440,9 @@ const AIBuilder: React.FC = () => {
       if (!saveResult.success) {
         throw new Error(saveResult.error || 'Failed to create trip');
       }
+
+      // Refresh subscription status after creating trip
+      await checkSubscriptionStatus();
 
       // Redirect to the specific trip page for manual editing
       router.push(`/itinerary/${tripId}`);
