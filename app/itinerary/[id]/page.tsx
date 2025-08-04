@@ -80,6 +80,7 @@ const ItineraryDetailPage = () => {
   const [selectedDayForAI, setSelectedDayForAI] = useState(1);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{url: string, name: string} | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -1126,6 +1127,45 @@ const ItineraryDetailPage = () => {
     setShowPhotoModal(true);
   };
 
+  // Get all photos from all activities
+  const getAllPhotos = () => {
+    const allPhotos: {url: string, name: string, activityTitle: string}[] = [];
+    activities.forEach(activity => {
+      if (activity.photos && activity.photos.length > 0) {
+        activity.photos.forEach((photo: any) => {
+          allPhotos.push({
+            url: photo.url,
+            name: photo.name || `Photo from ${activity.title}`,
+            activityTitle: activity.title
+          });
+        });
+      }
+    });
+    return allPhotos;
+  };
+
+  const nextCarouselSlide = () => {
+    const allPhotos = getAllPhotos();
+    setCarouselIndex((prev) => (prev + 1) % allPhotos.length);
+  };
+
+  const prevCarouselSlide = () => {
+    const allPhotos = getAllPhotos();
+    setCarouselIndex((prev) => (prev - 1 + allPhotos.length) % allPhotos.length);
+  };
+
+  // Auto-advance carousel
+  useEffect(() => {
+    const allPhotos = getAllPhotos();
+    if (allPhotos.length > 1) {
+      const interval = setInterval(() => {
+        setCarouselIndex((prev) => (prev + 1) % allPhotos.length);
+      }, 5000); // Change slide every 5 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [activities]); // Re-run when activities change
+
   // Don't render until mounted to prevent SSR issues
   if (!mounted || loading) {
     return (
@@ -1380,6 +1420,87 @@ const ItineraryDetailPage = () => {
               </button>
             </div>
           </div>
+
+          {/* Photo Carousel */}
+          {(() => {
+            const allPhotos = getAllPhotos();
+            if (allPhotos.length > 0) {
+              return (
+                <div className="mb-8">
+                  <div className="relative bg-white rounded-xl shadow-lg overflow-hidden">
+                    {/* Carousel Container */}
+                    <div className="relative h-64 sm:h-80">
+                      {allPhotos.map((photo, index) => (
+                        <div
+                          key={index}
+                          className={`absolute inset-0 transition-opacity duration-500 ${
+                            index === carouselIndex ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        >
+                          <img
+                            src={photo.url}
+                            alt={photo.name}
+                            className="w-full h-full object-cover"
+                            onClick={() => handlePhotoClick(photo)}
+                            onError={(e) => {
+                              console.error('Failed to load carousel photo:', photo.url);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                          <div className="absolute bottom-4 left-4 text-white">
+                            <p className="text-sm font-medium">{photo.name}</p>
+                            <p className="text-xs opacity-90">{photo.activityTitle}</p>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Navigation Arrows */}
+                      {allPhotos.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevCarouselSlide}
+                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors"
+                          >
+                            <ChevronLeft className="w-6 h-6" />
+                          </button>
+                          <button
+                            onClick={nextCarouselSlide}
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors"
+                          >
+                            <ChevronRight className="w-6 h-6" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Dots Indicator */}
+                      {allPhotos.length > 1 && (
+                        <div className="absolute bottom-4 right-4 flex space-x-2">
+                          {allPhotos.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCarouselIndex(index)}
+                              className={`w-2 h-2 rounded-full transition-colors ${
+                                index === carouselIndex ? 'bg-white' : 'bg-white/50'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Carousel Info */}
+                  <div className="mt-3 text-center">
+                    <p className="text-sm text-gray-600">
+                      {allPhotos.length} photo{allPhotos.length !== 1 ? 's' : ''} from your trip
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
