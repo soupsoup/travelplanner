@@ -73,6 +73,11 @@ const ItineraryDetailPage = () => {
   const [aiRevisionPrompt, setAiRevisionPrompt] = useState('');
   const [isGettingAIRevision, setIsGettingAIRevision] = useState(false);
   const [aiRevisionSuggestions, setAiRevisionSuggestions] = useState<string>('');
+  const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
+  const [aiGeneratePrompt, setAiGeneratePrompt] = useState('');
+  const [isGeneratingActivity, setIsGeneratingActivity] = useState(false);
+  const [generatedActivity, setGeneratedActivity] = useState<any>(null);
+  const [selectedDayForAI, setSelectedDayForAI] = useState(1);
 
   useEffect(() => {
     setMounted(true);
@@ -961,6 +966,66 @@ const ItineraryDetailPage = () => {
     setRevisingActivity(null);
     setAiRevisionPrompt('');
     setAiRevisionSuggestions('');
+  };
+
+  const handleAIGenerateActivity = () => {
+    setShowAIGenerateModal(true);
+    setAiGeneratePrompt('');
+    setGeneratedActivity(null);
+    setSelectedDayForAI(selectedDay);
+  };
+
+  const generateAIActivity = async () => {
+    if (!aiGeneratePrompt.trim()) {
+      alert('Please describe the type of activity you want to add');
+      return;
+    }
+
+    setIsGeneratingActivity(true);
+    
+    try {
+      const response = await fetch('/api/generate-activity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          trip: trip,
+          prompt: aiGeneratePrompt,
+          day: selectedDayForAI,
+          existingActivities: activities.filter(a => a.day === selectedDayForAI),
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setGeneratedActivity(result.activity);
+      } else {
+        alert('Failed to generate activity: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error generating activity:', error);
+      alert('Error generating activity');
+    } finally {
+      setIsGeneratingActivity(false);
+    }
+  };
+
+  const addGeneratedActivity = () => {
+    if (!generatedActivity) return;
+    
+    const newActivity = {
+      ...generatedActivity,
+      id: Date.now(), // Temporary ID for new activity
+      day: selectedDayForAI,
+    };
+    
+    setActivities(prev => [...prev, newActivity]);
+    setHasUnsavedChanges(true);
+    setShowAIGenerateModal(false);
+    setGeneratedActivity(null);
+    setAiGeneratePrompt('');
   };
 
   // Don't render until mounted to prevent SSR issues
@@ -1971,13 +2036,23 @@ const ItineraryDetailPage = () => {
                   </div>
                 </div>
                 ) : (
-                  <div className="text-center">
+                  <div className="text-center space-y-3">
                     <button
                       onClick={() => handleAddActivity(selectedDay)}
                       className="inline-flex items-center px-4 py-2 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
                     >
                       <Plus className="w-5 h-5 mr-2" />
                       Add Activity to Day {selectedDay}
+                    </button>
+                    
+                    <div className="text-sm text-gray-500">or</div>
+                    
+                    <button
+                      onClick={handleAIGenerateActivity}
+                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      AI Generate Activity
                     </button>
                   </div>
                 )}
@@ -2263,6 +2338,140 @@ const ItineraryDetailPage = () => {
                 setRevisingActivity(null);
                 setAiRevisionPrompt('');
                 setAiRevisionSuggestions('');
+              }}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI Generate Activity Modal */}
+      {showAIGenerateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-4">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-4">AI Generate New Activity</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Let AI create a new activity for Day {selectedDayForAI} in {trip?.destination}
+            </p>
+            
+            <div className="space-y-6">
+              {/* Day Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Add to Day
+                </label>
+                <select
+                  value={selectedDayForAI}
+                  onChange={(e) => setSelectedDayForAI(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => (
+                    <option key={day} value={day}>Day {day}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Activity Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Describe the type of activity you want (e.g., "A romantic dinner spot", "An outdoor adventure", "A cultural experience")
+                </label>
+                <textarea
+                  value={aiGeneratePrompt}
+                  onChange={(e) => setAiGeneratePrompt(e.target.value)}
+                  placeholder="Describe the perfect activity for this day..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* Generate Button */}
+              <button
+                onClick={generateAIActivity}
+                disabled={isGeneratingActivity || !aiGeneratePrompt.trim()}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGeneratingActivity ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Generating Activity...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Generate Activity</span>
+                  </>
+                )}
+              </button>
+              
+              {/* Generated Activity Preview */}
+              {generatedActivity && (
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <h4 className="font-semibold text-purple-900 mb-3">Generated Activity</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <strong className="text-purple-900">Title:</strong>
+                      <p className="text-gray-700">{generatedActivity.title}</p>
+                    </div>
+                    <div>
+                      <strong className="text-purple-900">Description:</strong>
+                      <p className="text-gray-700">{generatedActivity.description}</p>
+                    </div>
+                    <div>
+                      <strong className="text-purple-900">Time:</strong>
+                      <p className="text-gray-700">{generatedActivity.time}</p>
+                    </div>
+                    <div>
+                      <strong className="text-purple-900">Location:</strong>
+                      <p className="text-gray-700">{generatedActivity.location}</p>
+                    </div>
+                    <div>
+                      <strong className="text-purple-900">Cost:</strong>
+                      <p className="text-gray-700">${generatedActivity.cost}</p>
+                    </div>
+                    <div>
+                      <strong className="text-purple-900">Type:</strong>
+                      <p className="text-gray-700">{generatedActivity.type}</p>
+                    </div>
+                    {generatedActivity.tips && (
+                      <div>
+                        <strong className="text-purple-900">Tips:</strong>
+                        <p className="text-gray-700">{generatedActivity.tips}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4 flex space-x-3">
+                    <button
+                      onClick={addGeneratedActivity}
+                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                      Add to Itinerary
+                    </button>
+                    <button
+                      onClick={() => {
+                        setGeneratedActivity(null);
+                        setAiGeneratePrompt('');
+                      }}
+                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                      Generate Another
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => {
+                setShowAIGenerateModal(false);
+                setGeneratedActivity(null);
+                setAiGeneratePrompt('');
               }}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600"
             >
