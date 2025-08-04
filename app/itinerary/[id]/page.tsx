@@ -953,19 +953,33 @@ const ItineraryDetailPage = () => {
   };
 
   const applyAIRevision = (field: string, value: string) => {
-    if (!revisingActivity) return;
+    console.log('applyAIRevision called with:', field, value);
+    console.log('revisingActivity:', revisingActivity);
     
-    setActivities(prev => prev.map(activity => 
-      activity.id === revisingActivity.id 
-        ? { ...activity, [field]: value }
-        : activity
-    ));
+    if (!revisingActivity) {
+      console.log('No revising activity found');
+      return;
+    }
+    
+    console.log('Updating activity:', revisingActivity.id, 'field:', field, 'value:', value);
+    
+    setActivities(prev => {
+      const updated = prev.map(activity => 
+        activity.id === revisingActivity.id 
+          ? { ...activity, [field]: value }
+          : activity
+      );
+      console.log('Updated activities:', updated);
+      return updated;
+    });
     
     setHasUnsavedChanges(true);
     setShowAIRevisionModal(false);
     setRevisingActivity(null);
     setAiRevisionPrompt('');
     setAiRevisionSuggestions('');
+    
+    console.log('AI revision applied successfully');
   };
 
   const parseAISuggestions = (suggestions: string) => {
@@ -1014,7 +1028,12 @@ const ItineraryDetailPage = () => {
   const extractFieldFromSuggestions = (field: string) => {
     if (!aiRevisionSuggestions) return '';
     
+    console.log('Extracting field:', field);
+    console.log('AI suggestions:', aiRevisionSuggestions);
+    
     const parsed = parseAISuggestions(aiRevisionSuggestions);
+    console.log('Parsed sections:', parsed);
+    
     const fieldKey = field.toLowerCase();
     
     // Try different variations of the field name
@@ -1025,8 +1044,11 @@ const ItineraryDetailPage = () => {
       fieldKey.replace('tips', 'tip')
     ];
     
+    console.log('Trying keys:', possibleKeys);
+    
     for (const key of possibleKeys) {
       if (parsed[key]) {
+        console.log('Found in parsed sections:', key, parsed[key]);
         return parsed[key];
       }
     }
@@ -1041,10 +1063,12 @@ const ItineraryDetailPage = () => {
     for (const pattern of patterns) {
       const match = aiRevisionSuggestions.match(pattern);
       if (match && match[1]) {
+        console.log('Found with regex:', pattern, match[1]);
         return match[1].trim();
       }
     }
     
+    console.log('No field found for:', field);
     return '';
   };
 
@@ -2372,10 +2396,14 @@ const ItineraryDetailPage = () => {
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => {
+                          console.log('Apply Title button clicked');
                           const title = extractFieldFromSuggestions('title');
+                          console.log('Extracted title:', title);
                           if (title) {
+                            console.log('Applying title:', title);
                             applyAIRevision('title', title);
                           } else {
+                            console.log('No title found');
                             alert('Could not extract title from AI suggestions');
                           }
                         }}
@@ -2385,10 +2413,14 @@ const ItineraryDetailPage = () => {
                       </button>
                       <button
                         onClick={() => {
+                          console.log('Apply Description button clicked');
                           const description = extractFieldFromSuggestions('description');
+                          console.log('Extracted description:', description);
                           if (description) {
+                            console.log('Applying description:', description);
                             applyAIRevision('description', description);
                           } else {
+                            console.log('No description found');
                             alert('Could not extract description from AI suggestions');
                           }
                         }}
@@ -2398,10 +2430,14 @@ const ItineraryDetailPage = () => {
                       </button>
                       <button
                         onClick={() => {
+                          console.log('Apply Tips button clicked');
                           const tips = extractFieldFromSuggestions('tips');
+                          console.log('Extracted tips:', tips);
                           if (tips) {
+                            console.log('Applying tips:', tips);
                             applyAIRevision('tips', tips);
                           } else {
+                            console.log('No tips found');
                             alert('Could not extract tips from AI suggestions');
                           }
                         }}
