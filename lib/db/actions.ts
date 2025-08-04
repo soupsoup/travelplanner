@@ -130,15 +130,22 @@ export async function getActivityById(activityId: number) {
 
 export async function updateActivity(activityId: number, updateData: Partial<NewActivity>) {
   try {
+    // Check if activity exists first
+    const existingActivity = await db
+      .select()
+      .from(activities)
+      .where(eq(activities.id, activityId))
+      .limit(1);
+    
+    if (existingActivity.length === 0) {
+      return { success: false, error: 'Activity not found' };
+    }
+    
     const result = await db
       .update(activities)
       .set({ ...updateData, updatedAt: new Date() })
       .where(eq(activities.id, activityId))
       .returning();
-    
-    if (result.length === 0) {
-      return { success: false, error: 'Activity not found' };
-    }
     
     return { success: true, data: result[0] };
   } catch (error) {

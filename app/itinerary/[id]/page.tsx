@@ -1097,7 +1097,7 @@ const ItineraryDetailPage = () => {
     
     const newActivity = {
       ...generatedActivity,
-      id: Date.now(), // Temporary ID for new activity
+      id: -(Date.now() + Math.random()), // Temporary negative ID for new activity
       day: selectedDayForAI,
     };
     

@@ -56,6 +56,14 @@ export async function PUT(
       );
     }
     
+    // Handle temporary IDs (negative numbers) - these are new activities that haven't been saved yet
+    if (activityId < 0) {
+      return NextResponse.json(
+        { success: false, error: 'Cannot update temporary activity - save the trip first' },
+        { status: 400 }
+      );
+    }
+    
     const body = await request.json();
     
     // Extract updateable fields
