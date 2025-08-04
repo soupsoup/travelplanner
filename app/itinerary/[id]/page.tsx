@@ -78,6 +78,8 @@ const ItineraryDetailPage = () => {
   const [isGeneratingActivity, setIsGeneratingActivity] = useState(false);
   const [generatedActivity, setGeneratedActivity] = useState<any>(null);
   const [selectedDayForAI, setSelectedDayForAI] = useState(1);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<{url: string, name: string} | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -1109,6 +1111,12 @@ const ItineraryDetailPage = () => {
     setAiGeneratePrompt('');
   };
 
+  const handlePhotoClick = (photo: {url: string, name: string}) => {
+    console.log('Photo clicked:', photo);
+    setSelectedPhoto(photo);
+    setShowPhotoModal(true);
+  };
+
   // Don't render until mounted to prevent SSR issues
   if (!mounted || loading) {
     return (
@@ -1886,7 +1894,11 @@ const ItineraryDetailPage = () => {
                                       src={photo.url}
                                       alt={`Photo ${index + 1}`}
                                       className="w-full h-24 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity cursor-pointer"
-                                      onClick={() => window.open(photo.url, '_blank')}
+                                      onClick={() => handlePhotoClick(photo)}
+                                      onError={(e) => {
+                                        console.error('Failed to load photo:', photo.url);
+                                        e.currentTarget.style.display = 'none';
+                                      }}
                                     />
                                   </div>
                                 ))}
@@ -2561,6 +2573,46 @@ const ItineraryDetailPage = () => {
             >
               <X className="w-6 h-6" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Modal */}
+      {showPhotoModal && selectedPhoto && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+            <div className="bg-white rounded-lg overflow-hidden shadow-2xl">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">{selectedPhoto.name}</h3>
+                <button
+                  onClick={() => {
+                    setShowPhotoModal(false);
+                    setSelectedPhoto(null);
+                  }}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-4">
+                <img
+                  src={selectedPhoto.url}
+                  alt={selectedPhoto.name}
+                  className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                />
+              </div>
+              <div className="p-4 border-t bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">{selectedPhoto.name}</span>
+                  <button
+                    onClick={() => window.open(selectedPhoto.url, '_blank')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Open in New Tab
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
