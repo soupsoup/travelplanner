@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getTripById, getActivitiesByTrip } from '@/lib/db/actions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,19 +12,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, use mock trip data to prevent 500 errors
-    // TODO: Re-enable database calls once migration issues are resolved
-    const mockTrip = {
-      id: tripId,
-      destination: 'Paris, France',
-      daysCount: 7,
-      travelers: 2,
-      startDate: '2025-08-15',
-      endDate: '2025-08-22',
-      overview: 'A wonderful trip to Paris'
-    };
+    // Get trip and activities data
+    const tripResult = await getTripById(tripId);
+    if (!tripResult.success) {
+      return NextResponse.json(
+        { success: false, error: 'Trip not found' },
+        { status: 404 }
+      );
+    }
 
-    const trip = mockTrip;
+    const activitiesResult = await getActivitiesByTrip(tripId);
+    const activities = activitiesResult.success ? activitiesResult.data : [];
+
+    const trip = tripResult.data;
 
     // Generate email content
     const emailSubject = `Check out my trip to ${trip.destination}!`;

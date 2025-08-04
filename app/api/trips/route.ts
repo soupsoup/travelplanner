@@ -1,33 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createTrip, getAllTrips, createTripWithActivities } from '@/lib/db/actions';
+import { NewTrip, NewActivity } from '@/lib/db/schema';
 
 // GET /api/trips - Get all trips
 export async function GET() {
   try {
-    // For now, return mock data to prevent 500 errors
-    // TODO: Re-enable database calls once migration issues are resolved
-    const mockTrips = [
-      {
-        id: 'mock-trip-1',
-        name: 'Paris Adventure',
-        destination: 'Paris, France',
-        startDate: '2025-08-15',
-        endDate: '2025-08-22',
-        daysCount: 7,
-        travelers: 2,
-        status: 'planning',
-        image: null,
-        overview: 'A romantic week in the City of Light',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        activitiesCount: 0,
-        completedActivities: 0,
-        budget: { total: 2500, currency: 'USD' }
-      }
-    ];
+    const result = await getAllTrips();
+    
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: mockTrips
+      data: result.data
     });
   } catch (error) {
     console.error('Error fetching trips:', error);
@@ -52,29 +41,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, return success without saving to database
-    // TODO: Re-enable database calls once migration issues are resolved
-    const mockTrip = {
-      id: trip.id,
-      name: trip.name,
-      destination: trip.destination,
-      startDate: trip.startDate || new Date().toISOString().split('T')[0],
-      endDate: trip.endDate || new Date().toISOString().split('T')[0],
-      daysCount: trip.daysCount || trip.days || 7,
-      travelers: trip.travelers || 1,
-      status: trip.status || 'planning',
-      image: trip.image,
-      overview: trip.overview,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      activitiesCount: activities.length,
-      completedActivities: 0,
-      budget: { total: 0, currency: 'USD' }
-    };
+    // Create trip with activities if provided
+    let result;
+    if (activities.length > 0) {
+      result = await createTripWithActivities(trip, activities);
+    } else {
+      result = await createTrip(trip);
+    }
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: mockTrip
+      data: result.data
     });
   } catch (error) {
     console.error('Error creating trip:', error);

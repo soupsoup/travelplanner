@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getTripWithActivities, updateTrip, deleteTrip } from '@/lib/db/actions';
 
 // GET /api/trips/[id] - Get a specific trip with activities
 export async function GET(
@@ -7,32 +8,18 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const tripId = id;
+    const result = await getTripWithActivities(id);
     
-    // For now, return mock data to prevent 500 errors
-    // TODO: Re-enable database calls once migration issues are resolved
-    const mockTrip = {
-      id: tripId,
-      name: 'Sample Trip',
-      destination: 'Paris, France',
-      startDate: '2025-08-15',
-      endDate: '2025-08-22',
-      daysCount: 7,
-      travelers: 2,
-      status: 'planning',
-      image: null,
-      overview: 'A wonderful trip',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      activities: [],
-      activitiesCount: 0,
-      completedActivities: 0,
-      budget: { total: 2500, currency: 'USD' }
-    };
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: 'Trip not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: mockTrip
+      data: result.data
     });
   } catch (error) {
     console.error('Error fetching trip:', error);
@@ -50,32 +37,20 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
-    const tripId = id;
     const body = await request.json();
     
-    // For now, return success without updating database
-    // TODO: Re-enable database calls once migration issues are resolved
-    const mockUpdatedTrip = {
-      id: tripId,
-      name: body.name || 'Updated Trip',
-      destination: body.destination || 'Paris, France',
-      startDate: body.startDate || '2025-08-15',
-      endDate: body.endDate || '2025-08-22',
-      daysCount: body.daysCount || 7,
-      travelers: body.travelers || 2,
-      status: body.status || 'planning',
-      image: body.image,
-      overview: body.overview || 'Updated trip',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      activitiesCount: 0,
-      completedActivities: 0,
-      budget: { total: 2500, currency: 'USD' }
-    };
+    const result = await updateTrip(id, body);
+    
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: mockUpdatedTrip
+      data: result.data
     });
   } catch (error) {
     console.error('Error updating trip:', error);
@@ -93,31 +68,18 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    const tripId = id;
+    const result = await deleteTrip(id);
     
-    // For now, return success without deleting from database
-    // TODO: Re-enable database calls once migration issues are resolved
-    const mockDeletedTrip = {
-      id: tripId,
-      name: 'Deleted Trip',
-      destination: 'Paris, France',
-      startDate: '2025-08-15',
-      endDate: '2025-08-22',
-      daysCount: 7,
-      travelers: 2,
-      status: 'deleted',
-      image: null,
-      overview: 'This trip was deleted',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      activitiesCount: 0,
-      completedActivities: 0,
-      budget: { total: 0, currency: 'USD' }
-    };
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: mockDeletedTrip
+      data: result.data
     });
   } catch (error) {
     console.error('Error deleting trip:', error);

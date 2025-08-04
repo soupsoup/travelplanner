@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sql } from '@/lib/db';
 
 export async function GET() {
   try {
-    // For now, return mock data to prevent 500 errors
-    // TODO: Re-enable database calls once migration issues are resolved
+    // Test the database connection
+    const result = await sql`SELECT NOW() as current_time, version() as postgres_version`;
     
     return NextResponse.json({
       success: true,
-      message: 'Database connection successful! (Mock)',
+      message: 'Database connection successful!',
       data: {
-        currentTime: new Date().toISOString(),
-        postgresVersion: 'Mock PostgreSQL'
+        currentTime: result[0].current_time,
+        postgresVersion: result[0].postgres_version
       }
     });
   } catch (error) {
