@@ -1113,6 +1113,15 @@ const ItineraryDetailPage = () => {
 
   const handlePhotoClick = (photo: {url: string, name: string}) => {
     console.log('Photo clicked:', photo);
+    console.log('Photo URL:', photo.url);
+    console.log('Photo name:', photo.name);
+    
+    // Check if photo has required properties
+    if (!photo.url) {
+      console.error('Photo has no URL:', photo);
+      return;
+    }
+    
     setSelectedPhoto(photo);
     setShowPhotoModal(true);
   };
@@ -1866,17 +1875,22 @@ const ItineraryDetailPage = () => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2"
                               />
                               {activity.photos && activity.photos.length > 0 && (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   {activity.photos.map((photo, index) => (
                                     <div key={index} className="relative">
                                       <img
                                         src={photo.url}
                                         alt={`Photo ${index + 1}`}
-                                        className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                                        className="w-full h-32 sm:h-40 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity cursor-pointer"
+                                        onClick={() => handlePhotoClick(photo)}
+                                        onError={(e) => {
+                                          console.error('Failed to load photo:', photo.url);
+                                          e.currentTarget.style.display = 'none';
+                                        }}
                                       />
                                       <button
                                         onClick={() => handleActivityPhotoRemove(activity.id, index)}
-                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
                                       >
                                         ×
                                       </button>
@@ -1887,21 +1901,24 @@ const ItineraryDetailPage = () => {
                             </div>
                           ) : (
                             activity.photos && activity.photos.length > 0 && (
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {activity.photos.map((photo, index) => (
-                                  <div key={index} className="relative">
-                                    <img
-                                      src={photo.url}
-                                      alt={`Photo ${index + 1}`}
-                                      className="w-full h-24 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity cursor-pointer"
-                                      onClick={() => handlePhotoClick(photo)}
-                                      onError={(e) => {
-                                        console.error('Failed to load photo:', photo.url);
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                ))}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                {activity.photos.map((photo, index) => {
+                                  console.log('Rendering photo:', photo);
+                                  return (
+                                    <div key={index} className="relative">
+                                      <img
+                                        src={photo.url}
+                                        alt={`Photo ${index + 1}`}
+                                        className="w-full h-32 sm:h-40 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity cursor-pointer"
+                                        onClick={() => handlePhotoClick(photo)}
+                                        onError={(e) => {
+                                          console.error('Failed to load photo:', photo.url);
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )
                           )}
@@ -2091,17 +2108,22 @@ const ItineraryDetailPage = () => {
                         Upload photos related to this activity. Multiple files supported.
                       </p>
                       {newActivity.photos.length > 0 && (
-                        <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {newActivity.photos.map((photo, index) => (
                             <div key={index} className="relative">
                               <img
                                 src={photo.url}
                                 alt={`Photo ${index + 1}`}
-                                className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                                className="w-full h-32 sm:h-40 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity cursor-pointer"
+                                onClick={() => handlePhotoClick(photo)}
+                                onError={(e) => {
+                                  console.error('Failed to load photo:', photo.url);
+                                  e.currentTarget.style.display = 'none';
+                                }}
                               />
                               <button
                                 onClick={() => handlePhotoRemove(index)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
                               >
                                 ×
                               </button>
@@ -2594,11 +2616,15 @@ const ItineraryDetailPage = () => {
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              <div className="p-4">
+              <div className="p-4 flex items-center justify-center">
                 <img
                   src={selectedPhoto.url}
                   alt={selectedPhoto.name}
-                  className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                  className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-lg"
+                  onError={(e) => {
+                    console.error('Failed to load photo in modal:', selectedPhoto.url);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </div>
               <div className="p-4 border-t bg-gray-50">
