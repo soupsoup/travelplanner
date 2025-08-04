@@ -77,6 +77,11 @@ const AIBuilder: React.FC = () => {
     checkSubscriptionStatus();
   }, []);
 
+  // Debug modal state changes
+  React.useEffect(() => {
+    console.log('🔍 Modal state changed to:', showSubscriptionModal);
+  }, [showSubscriptionModal]);
+
   const checkSubscriptionStatus = async () => {
     try {
       const response = await fetch('/api/subscription/check', {
@@ -209,7 +214,9 @@ const AIBuilder: React.FC = () => {
           // If user cannot create trips, show subscription modal
           if (!canCreate) {
             console.log('🚫 User cannot create trips - showing subscription modal');
+            console.log('Setting showSubscriptionModal to true');
             setShowSubscriptionModal(true);
+            console.log('Modal state should now be true');
             return;
           }
         }
@@ -415,8 +422,10 @@ const AIBuilder: React.FC = () => {
           
           // If user cannot create trips, show subscription modal
           if (!canCreate) {
-            console.log('🚫 User cannot create trips - showing subscription modal');
+            console.log('🚫 User cannot create trips - showing subscription modal (manual)');
+            console.log('Setting showSubscriptionModal to true');
             setShowSubscriptionModal(true);
+            console.log('Modal state should now be true');
             return;
           }
         }
